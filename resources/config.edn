@@ -1,0 +1,2 @@
+{:logging {:level :info
+           :console {:encoder :json}}}
