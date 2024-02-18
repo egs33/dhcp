@@ -1,4 +1,5 @@
-{:rules {:indentation {:list-indent 1}
+{:rules {:indentation {:list-indent 1
+                       :indents {defrecord [[:inner 0] [:inner 1]]}}
          :blank-lines {:max-consecutive 1
                        :padding-lines 1}
          :vars {:enabled? false}

@@ -8,3 +8,5 @@
 *.tar.gz
 *.rar
 .cpcache
+.nrepl-port
+target
