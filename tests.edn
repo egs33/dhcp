@@ -1,0 +1,14 @@
+#kaocha/v1
+{:tests [{:id :small
+          :source-paths ["src"]
+          :test-paths ["test"]
+          :ns-patterns ["-test$"]}]
+ :plugins [:kaocha.plugin/print-invocations
+           :kaocha.plugin/profiling
+           :kaocha.plugin/cloverage]
+ :fail-fast? false
+ :color? true
+ :watch? false
+ :reporter kaocha.report/documentation
+ :capture-output? true
+ :kaocha.plugin.profiling/count 3}
