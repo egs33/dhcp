@@ -19,3 +19,13 @@ jobs:
           clj-kondo: latest
       - run: cljstyle check --report -v
       - run: clj-kondo --lint src --config '{:output {:pattern "::{{level}} file={{filename}},line={{row}},col={{col}}::{{message}}"}}'
+
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: DeLaGuardo/setup-clojure@12.5
+        with:
+          cli: latest
+      - run: clojure -M:dev:test
