@@ -28,4 +28,12 @@ jobs:
       - uses: DeLaGuardo/setup-clojure@12.5
         with:
           cli: latest
+      - uses: actions/cache@v4
+        with:
+          path: |
+            ~/.m2/repository
+            ~/.gitlibs
+            ~/.deps.clj
+          key: cljdeps-${{ hashFiles('deps.edn') }}
+          restore-keys: cljdeps-
       - run: clojure -M:dev:test
