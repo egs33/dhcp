@@ -15,7 +15,8 @@
 
 (def UDP-SERVER-PORT 67)
 
-(defrecord UdpServer [^DatagramSocket socket]
+(defrecord UdpServer [^DatagramSocket socket
+                      handler]
   component/Lifecycle
   (start [this]
     (log/info "UdpServer start")
@@ -39,7 +40,15 @@
                                     (log/error "udp-server exception %s"
                                                e)))))]
             (when packet
-              (r.dhcp-message/parse-message packet))
+              (try
+                (let [parsed (r.dhcp-message/parse-message packet)]
+                  ((:handler handler) parsed))
+                (catch ExceptionInfo e
+                  (log/error "parse-message exception-info %s %s"
+                             (ex-message e) (ex-data e)))
+                (catch Exception e
+                  (log/error "parse-message exception %s"
+                             e))))
             (recur))
           (log/infof "udp-server is closed")))
       (assoc this :socket socket)))

@@ -3,12 +3,15 @@
    [aero.core :as aero]
    [clojure.java.io :as io]
    [com.stuartsierra.component :as component]
+   [dhcp.components.handler :as c.handler]
    [dhcp.components.udp-server :as c.udp-server]
    [unilog.config :as unilog]))
 
 (defn- new-system [_config]
   (component/system-map
-   :udp-server (c.udp-server/->UdpServer nil)))
+   :handler (c.handler/->Handler nil)
+   :udp-server (component/using (c.udp-server/map->UdpServer {})
+                                [:handler])))
 
 (defn start []
   (let [config (aero/read-config (io/resource "config.edn") {:profile :prod})
