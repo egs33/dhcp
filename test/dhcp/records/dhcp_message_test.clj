@@ -5,7 +5,8 @@
    [dhcp.records.ip-address :as r.ip-address])
   (:import
    (java.net
-    DatagramPacket)))
+    DatagramPacket
+    InetAddress)))
 
 (deftest parse-message-test
   (testing "DHCPDISCOVER"
@@ -28,9 +29,11 @@
                                        (take 1024)
                                        byte-array)
                                   0
-                                  (int (count data)))]
+                                  (int (count data)))
+          ip-addr (InetAddress/getByAddress ^bytes (byte-array [192 168 0 1]))]
       (is (= (r.dhcp-message/map->DhcpMessage
-              {:op :BOOTREQUEST
+              {:local-address ip-addr
+               :op :BOOTREQUEST
                :htype (byte 1)
                :hlen (byte 6)
                :hops (byte 0)
@@ -49,4 +52,4 @@
                :file ""
                :options [{:code 53, :type :dhcp-message-type, :length 3, :value [1]}
                          {:code 0, :type :pad, :length 1, :value []}]})
-             (r.dhcp-message/parse-message packet))))))
+             (r.dhcp-message/parse-message ip-addr packet))))))

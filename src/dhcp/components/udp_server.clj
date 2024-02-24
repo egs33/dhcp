@@ -7,22 +7,42 @@
    [dhcp.records.dhcp-message :as r.dhcp-message])
   (:import
    (clojure.lang
-    ExceptionInfo)
+    ExceptionInfo
+    IFn)
    (java.net
     DatagramPacket
     DatagramSocket
+    Inet4Address
+    NetworkInterface
     SocketException)))
 
 (def UDP-SERVER-PORT 67)
 
-(defrecord UdpServer [^DatagramSocket socket
-                      handler]
-  component/Lifecycle
-  (start [this]
-    (log/info "UdpServer start")
-    (when socket
-      (.close socket))
-    (let [socket (DatagramSocket. (int UDP-SERVER-PORT))]
+(defn- list-local-ip-addresses
+  "Return all ipv4 addresses on local machine"
+  []
+  (->> (NetworkInterface/getNetworkInterfaces)
+       enumeration-seq
+       (mapcat (fn [interface]
+                 (when (.isUp interface)
+                   (enumeration-seq (.getInetAddresses interface)))))
+       (filter #(instance? Inet4Address %))))
+
+(defprotocol ^:private IUdpServerSocket
+  (open [this])
+  (close [this]))
+
+(defprotocol IBlockUntilClose
+  (blocks-until-close [this]))
+
+(defrecord ^:private UdpServerSocket [^Inet4Address ip-address
+                                      socket-atom
+                                      ^IFn handler]
+  IUdpServerSocket
+  (open [_]
+    (when @socket-atom
+      (.close @socket-atom))
+    (let [socket (DatagramSocket. (int UDP-SERVER-PORT) ip-address)]
       (as/go-loop []
         (if-not (.isClosed socket)
           (let [packet (as/<! (as/thread
@@ -41,8 +61,8 @@
                                                e)))))]
             (when packet
               (try
-                (let [parsed (r.dhcp-message/parse-message packet)]
-                  ((:handler handler) parsed))
+                (let [parsed (r.dhcp-message/parse-message ip-address packet)]
+                  (handler ip-address parsed))
                 (catch ExceptionInfo e
                   (log/error "parse-message exception-info %s %s"
                              (ex-message e) (ex-data e)))
@@ -51,9 +71,43 @@
                              e))))
             (recur))
           (log/infof "udp-server is closed")))
-      (assoc this :socket socket)))
+      (reset! socket-atom socket)))
+  (close [_]
+    (swap! socket-atom (fn [s]
+                         (when s
+                           (.close s))
+                         nil)))
+
+  IBlockUntilClose
+  (blocks-until-close [_]
+    (as/<!! (as/go-loop []
+              (when-let [socket @socket-atom]
+                (when (not (.isClosed socket))
+                  (as/<! (as/timeout 1000))
+                  (recur)))))))
+
+(defrecord UdpServer [sockets
+                      handler]
+  component/Lifecycle
+  (start [this]
+    (log/info "UdpServer start")
+    (let [ips (list-local-ip-addresses)
+          _ (log/infof "Listening Ip addresses:%s" (mapv str ips))
+          ;; If the socket listen on "0.0.0.0", it will not know which interface received the datagram,
+          ;; so it listen on each IP address.
+          sockets (mapv (fn [ip]
+                          (map->UdpServerSocket {:ip-address ip
+                                                 :socket-atom (atom nil)
+                                                 :handler (:handler handler)}))
+                        ips)]
+      (mapv open sockets)
+      (assoc this :sockets sockets)))
   (stop [this]
     (log/info "UdpServer stop")
-    (when socket
-      (.close socket))
-    (assoc this :socket nil)))
+    (mapv close sockets)
+    (assoc this :sockets nil))
+
+  IBlockUntilClose
+  (blocks-until-close [_]
+    (when-first [s sockets]
+      (blocks-until-close s))))
