@@ -18,7 +18,23 @@
     Arrays)))
 
 (defprotocol IDhcpMessage
-  (getType [this]))
+  (getType [this])
+  (->bytes [this]))
+
+(def ^Charset US-ASCII (Charset/forName "US-ASCII"))
+
+(defn- str->bytes
+  "convert string to null terminated bytes.
+  if len is nil, no padding and no trim"
+  ([^String s] (str->bytes s nil))
+  ([^String s
+    len]
+   (if len
+     (let [value (->> (.getBytes s US-ASCII)
+                      (take (dec len)))]
+       (->> (concat value (repeat 0))
+            (take len)))
+     (concat (.getBytes s US-ASCII) [0]))))
 
 (defrecord DhcpMessage [^Inet4Address local-address
                         ^Keyword op
@@ -42,7 +58,23 @@
          (filter #(= (:type %) :dhcp-message-type))
          first
          :value
-         first)))
+         first))
+  (->bytes ^bytes [_]
+    (byte-array (concat [(case op :BOOTREQUEST 1 :BOOTREPLY 2)
+                         htype
+                         hlen
+                         hops]
+                        (u.bytes/number->byte-coll xid 4)
+                        (u.bytes/number->byte-coll secs 2)
+                        (u.bytes/number->byte-coll flags 2)
+                        (r.ip-address/->bytes ciaddr)
+                        (r.ip-address/->bytes yiaddr)
+                        (r.ip-address/->bytes siaddr)
+                        (r.ip-address/->bytes giaddr)
+                        chaddr
+                        (str->bytes sname 64)
+                        (str->bytes file 128)
+                        (option/options->bytes options)))))
 
 (defn- bytes->str
   "convert null terminated bytes to string"
@@ -57,7 +89,7 @@
              (int (if (= null-idx -1)
                     (count bytes)
                     null-idx))
-             (Charset/forName "US-ASCII"))))
+             US-ASCII)))
 
 (defn parse-message
   ^DhcpMessage [^Inet4Address local-address

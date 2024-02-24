@@ -111,3 +111,13 @@
           (persistent! options)))
       (log/warn "magic cookie not found" {:4octets [b1 b2 b3 b4]
                                           :len (count bytes)}))))
+
+(defn options->bytes [options]
+  (concat [99 130 83 99]
+          (mapcat (fn [option]
+                    (if (contains? #{0 255} (:code option))
+                      [(:code option)]
+                      (concat [(:code option)
+                               (- (:length option) 2)]
+                              (:value option))))
+                  options)))
