@@ -88,12 +88,12 @@
   [^IPersistentVector bytes]
   (let [code (Byte/toUnsignedInt (first bytes))]
     (case (Byte/toUnsignedInt (first bytes))
-      0 {:code 0, :type :pad, :length 1, :value []}
-      255 {:code 255, :type :end, :length 1, :value []}
+      0 {:code 0, :type :pad, :length 0, :value []}
+      255 {:code 255, :type :end, :length 0, :value []}
       (let [len (Byte/toUnsignedInt (nth bytes 1))]
         {:code code
          :type (get option-code-map code :unknown)
-         :length (+ 2 len)
+         :length len
          :value (subvec bytes 2 (+ 2 len))}))))
 
 (defn parse-options [^bytes bytes]
@@ -105,8 +105,10 @@
       (loop [rest (vec rest)
              options (transient [])]
         (if (seq rest)
-          (let [option (parse-option rest)]
-            (recur (subvec rest (:length option))
+          (let [{:as option :keys [:code :length]} (parse-option rest)]
+            (recur (subvec rest (if (#{0 255} code)
+                                  1
+                                  (+ 2 length)))
                    (conj! options option)))
           (persistent! options)))
       (log/warn "magic cookie not found" {:4octets [b1 b2 b3 b4]
@@ -118,6 +120,6 @@
                     (if (contains? #{0 255} (:code option))
                       [(:code option)]
                       (concat [(:code option)
-                               (- (:length option) 2)]
+                               (:length option)]
                               (:value option))))
                   options)))

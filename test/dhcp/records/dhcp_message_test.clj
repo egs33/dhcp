@@ -50,8 +50,8 @@
                         0 0 0 0]
                :sname ""
                :file ""
-               :options [{:code 53, :type :dhcp-message-type, :length 3, :value [1]}
-                         {:code 0, :type :pad, :length 1, :value []}]})
+               :options [{:code 53, :type :dhcp-message-type, :length 1, :value [1]}
+                         {:code 0, :type :pad, :length 0, :value []}]})
              (r.dhcp-message/parse-message ip-addr packet))))))
 
 (deftest ->bytes-test
@@ -92,5 +92,5 @@
                                                      0 0 0 0]
                                             :sname ""
                                             :file ""
-                                            :options [{:code 53, :type :dhcp-message-type, :length 3, :value [1]}
-                                                      {:code 0, :type :pad, :length 1, :value []}]}))))))))
+                                            :options [{:code 53, :type :dhcp-message-type, :length 1, :value [1]}
+                                                      {:code 0, :type :pad, :length 0, :value []}]}))))))))
