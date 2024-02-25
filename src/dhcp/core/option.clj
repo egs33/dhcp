@@ -1,6 +1,4 @@
 (ns dhcp.core.option
-  (:require
-   [clojure.tools.logging :as log])
   (:import
    (clojure.lang
     IPersistentVector)))
@@ -172,22 +170,21 @@
          :value (subvec bytes 2 (+ 2 len))}))))
 
 (defn parse-options [^bytes bytes]
-  (let [[b1 b2 b3 b4 & rest] (seq bytes)]
-    (if (and (= b1 99)
-             (= b2 -126)                                  ; = 130
-             (= b3 83)
-             (= b4 99))
-      (loop [rest (vec rest)
-             options (transient [])]
-        (if (seq rest)
-          (let [{:as option :keys [:code :length]} (parse-option rest)]
-            (recur (subvec rest (if (#{0 255} code)
-                                  1
-                                  (+ 2 length)))
-                   (conj! options option)))
-          (persistent! options)))
-      (log/warn "magic cookie not found" {:4octets [b1 b2 b3 b4]
-                                          :len (count bytes)}))))
+  (loop [rest (vec bytes)
+         options (transient [])]
+    (if (seq rest)
+      (let [{:as option :keys [:code :length]} (parse-option rest)]
+        (recur (subvec rest (if (#{0 255} code)
+                              1
+                              (+ 2 length)))
+               (conj! options option)))
+      (persistent! options))))
+
+(defn start-with-magic-cookie? [^bytes bytes]
+  (and (= (nth bytes 0) 99)
+       (= (nth bytes 1) -126)                                  ; = 130
+       (= (nth bytes 2) 83)
+       (= (nth bytes 3) 99)))
 
 (defn options->bytes [options]
   (concat [99 130 83 99]

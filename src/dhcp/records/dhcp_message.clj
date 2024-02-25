@@ -1,6 +1,7 @@
 (ns dhcp.records.dhcp-message
   (:require
    [clojure.pprint]
+   [clojure.tools.logging :as log]
    [dhcp.core.option :as option]
    [dhcp.records.ip-address :as r.ip-address]
    [dhcp.util.bytes :as u.bytes])
@@ -110,10 +111,30 @@
         siaddr (r.ip-address/bytes->ip-address (Arrays/copyOfRange data 20 24))
         giaddr (r.ip-address/bytes->ip-address (Arrays/copyOfRange data 24 28))
         chaddr (vec (Arrays/copyOfRange data 28 44))
-        sname (bytes->str (Arrays/copyOfRange data 44 108))
-        file (bytes->str (Arrays/copyOfRange data 108 236))
         rest (Arrays/copyOfRange data 236 (.getLength datagram))
-        options (option/parse-options rest)]
+        options (if (option/start-with-magic-cookie? rest)
+                  (option/parse-options (drop 4 rest))
+                  (log/warn "magic cookie not found" {:4octets (take 4 rest)
+                                                      :len (count rest)}))
+        overload-option-value (some-> (filter #(= (:code %) 52) options)
+                                      first
+                                      :value
+                                      first
+                                      long)
+        sname-byte (Arrays/copyOfRange data 44 108)
+        sname (if (#{2 3} overload-option-value)
+                ""
+                (bytes->str sname-byte))
+        options-in-sname (when (#{1 3} overload-option-value)
+                           (->> (option/parse-options sname-byte)
+                                (take-while #(not= (:code %) 255))))
+        file-bytes (Arrays/copyOfRange data 108 236)
+        file (if (#{1 3} overload-option-value)
+               ""
+               (bytes->str file-bytes))
+        options-in-file (when (#{1 3} overload-option-value)
+                          (->> (option/parse-options file-bytes)
+                               (take-while #(not= (:code %) 255))))]
     (map->DhcpMessage
      {:local-address local-address
       :op op
@@ -130,4 +151,6 @@
       :chaddr chaddr
       :sname sname
       :file file
-      :options options})))
+      :options (concat options
+                       options-in-sname
+                       options-in-file)})))
