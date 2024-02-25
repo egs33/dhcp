@@ -62,7 +62,7 @@
             (when packet
               (try
                 (let [parsed (r.dhcp-message/parse-message ip-address packet)]
-                  (handler ip-address parsed))
+                  (handler @socket-atom parsed))
                 (catch ExceptionInfo e
                   (log/error "parse-message exception-info %s %s"
                              (ex-message e) (ex-data e)))

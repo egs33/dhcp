@@ -4,13 +4,17 @@
    [dhcp.records.dhcp-message :as r.dhcp-message])
   (:import
    (dhcp.records.dhcp_message
-    DhcpMessage)))
+    DhcpMessage)
+   (java.net
+    DatagramSocket)))
 
 (defmulti handler
-  (fn [^DhcpMessage message]
+  (fn [^DatagramSocket _
+       ^DhcpMessage message]
     (r.dhcp-message/getType message)))
 
 (defmethod handler :default
-  [^DhcpMessage message]
+  [^DatagramSocket _
+   ^DhcpMessage message]
   (log/warnf "undefined message type:%s"
              (r.dhcp-message/getType message)))

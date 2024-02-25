@@ -4,11 +4,14 @@
    [dhcp.handler :as h])
   (:import
    (dhcp.records.dhcp_message
-    DhcpMessage)))
+    DhcpMessage)
+   (java.net
+    DatagramSocket)))
 
 (defn make-handler [_]
-  (fn [^DhcpMessage message]
-    (h/handler message)))
+  (fn [^DatagramSocket socket
+       ^DhcpMessage message]
+    (h/handler socket message)))
 
 (defrecord Handler [handler]
   component/Lifecycle
