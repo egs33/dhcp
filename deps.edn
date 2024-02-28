@@ -3,8 +3,10 @@
         spootnik/unilog {:mvn/version "0.7.31"}
         aero/aero {:mvn/version "1.1.6"}
         com.stuartsierra/component {:mvn/version "1.1.0"}
-        org.clojure/core.async {:mvn/version "1.6.681"}}
- :aliases {:dev {:extra-paths ["test"]
+        org.clojure/core.async {:mvn/version "1.6.681"}
+        metosin/malli {:mvn/version "0.14.0"}
+        clj-commons/clj-yaml {:mvn/version "1.0.27"}}
+ :aliases {:dev {:extra-paths ["test" "test-resources"]
                  :extra-deps {lambdaisland/kaocha {:mvn/version "1.87.1366"}
                               lambdaisland/kaocha-cloverage {:mvn/version "1.1.89"}}}
            :test {:main-opts ["-m" "kaocha.runner"]}
