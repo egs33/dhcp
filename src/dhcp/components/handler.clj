@@ -8,14 +8,14 @@
    (java.net
     DatagramSocket)))
 
-(defn make-handler [_]
+(defn make-handler [_config]
   (fn [^DatagramSocket socket
        ^DhcpMessage message]
     (h/handler socket message)))
 
-(defrecord Handler [handler]
+(defrecord Handler [handler config]
   component/Lifecycle
   (start [this]
-    (assoc this :handler (make-handler this)))
+    (assoc this :handler (make-handler (:config config))))
   (stop [this]
     (assoc this :handler nil)))

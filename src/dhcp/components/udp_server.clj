@@ -87,7 +87,8 @@
                   (recur)))))))
 
 (defrecord UdpServer [sockets
-                      handler]
+                      handler
+                      config]
   component/Lifecycle
   (start [this]
     (log/info "UdpServer start")

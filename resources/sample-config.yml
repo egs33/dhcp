@@ -1,0 +1,13 @@
+interfaces:
+leaseTime: 3600
+subnets:
+  - cidr: 192.168.0.0/24
+    router: 192.168.0.1
+    pools:
+      - startAddress: 192.168.0.50
+        endAddress: 192.168.0.60
+    dns: [192.168.0.1]
+
+database:
+  type: memory
+
