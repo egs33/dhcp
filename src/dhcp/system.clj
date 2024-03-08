@@ -3,10 +3,10 @@
    [aero.core :as aero]
    [clojure.java.io :as io]
    [com.stuartsierra.component :as component]
-   [dhcp.components.config :as c.config]
    [dhcp.components.database :as c.database]
    [dhcp.components.handler :as c.handler]
    [dhcp.components.udp-server :as c.udp-server]
+   [dhcp.records.config :as r.config]
    [unilog.config :as unilog]))
 
 (defn- new-system [_config server-config]
@@ -21,7 +21,7 @@
 (defn start []
   (let [config (aero/read-config (io/resource "config.edn") {:profile :prod})
         _ (unilog/start-logging! (:logging config))
-        server-config (c.config/load-config (.getPath (io/resource "sample-config.yml")))]
+        server-config (r.config/load-config (.getPath (io/resource "sample-config.yml")))]
     (when server-config
       (component/start (new-system config (:config server-config))))))
 

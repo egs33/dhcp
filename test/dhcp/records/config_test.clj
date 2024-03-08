@@ -1,9 +1,9 @@
-(ns dhcp.components.config-test
+(ns dhcp.records.config-test
   (:require
    [clojure.java.io :as io]
    [clojure.string :as str]
    [clojure.test :refer [deftest testing is]]
-   [dhcp.components.config :as c.config]
+   [dhcp.records.config :as r.config]
    [dhcp.records.ip-address :as r.ip-address]))
 
 (deftest load-config-test
@@ -12,7 +12,7 @@
       (with-redefs [slurp (constantly "")]
         (let [ret (atom nil)
               msg (with-out-str
-                    (reset! ret (c.config/load-config "")))]
+                    (reset! ret (r.config/load-config "")))]
           (is (nil? @ret)
               "return nil")
           (is (= "failed to parse config\n" msg)
@@ -21,7 +21,7 @@
       (let [path1 (.getPath (io/resource "config/error-config1.yml"))
             ret (atom nil)
             msg (with-out-str
-                  (reset! ret (c.config/load-config path1)))]
+                  (reset! ret (r.config/load-config path1)))]
         (is (nil? @ret)
             "return nil")
         (is (= (str/join "\n"
@@ -41,7 +41,7 @@
       (let [path1 (.getPath (io/resource "config/error-config2.yml"))
             ret (atom nil)
             msg (with-out-str
-                  (reset! ret (c.config/load-config path1)))]
+                  (reset! ret (r.config/load-config path1)))]
         (is (nil? @ret)
             "return nil")
         (is (= "subnets[0].pools[0].start-address: not in network\n"
@@ -50,8 +50,8 @@
   (testing "load success"
     (testing "minimal config"
       (let [path2 (.getPath (io/resource "config/minimal-config.yml"))
-            config (c.config/load-config path2)]
-        (is (= (c.config/->Config
+            config (r.config/load-config path2)]
+        (is (= (r.config/->Config
                 {:interfaces nil
                  :subnets [{:start-address (r.ip-address/str->ip-address "192.168.0.0")
                             :end-address (r.ip-address/str->ip-address "192.168.0.255")
@@ -67,8 +67,8 @@
             "return config is normalized")))
     (testing "complex config"
       (let [path2 (.getPath (io/resource "config/complex-config.yml"))
-            config (c.config/load-config path2)]
-        (is (= (c.config/->Config
+            config (r.config/load-config path2)]
+        (is (= (r.config/->Config
                 {:interfaces ["eth0" "eth1"]
                  :subnets [{:start-address (r.ip-address/str->ip-address "192.168.0.0")
                             :end-address (r.ip-address/str->ip-address "192.168.0.127")

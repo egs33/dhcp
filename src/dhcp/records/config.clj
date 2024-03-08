@@ -1,4 +1,4 @@
-(ns dhcp.components.config
+(ns dhcp.records.config
   (:require
    [clj-yaml.core :as yaml]
    [clojure.string :as str]

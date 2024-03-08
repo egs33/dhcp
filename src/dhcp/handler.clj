@@ -3,10 +3,10 @@
    [clojure.tools.logging :as log]
    [dhcp.records.dhcp-message :as r.dhcp-message])
   (:import
-   (dhcp.components.config
-    Config)
    (dhcp.components.database
     IDatabase)
+   (dhcp.records.config
+    Config)
    (dhcp.records.dhcp_message
     DhcpMessage)
    (java.net
