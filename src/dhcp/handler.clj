@@ -5,6 +5,8 @@
   (:import
    (dhcp.components.config
     Config)
+   (dhcp.components.database
+    IDatabase)
    (dhcp.records.dhcp_message
     DhcpMessage)
    (java.net
@@ -12,12 +14,14 @@
 
 (defmulti handler
   (fn [^DatagramSocket _
+       ^IDatabase _
        ^Config _
        ^DhcpMessage message]
     (r.dhcp-message/getType message)))
 
 (defmethod handler :default
   [^DatagramSocket _
+   ^IDatabase _
    ^Config _
    ^DhcpMessage message]
   (log/warnf "undefined message type:%s"
