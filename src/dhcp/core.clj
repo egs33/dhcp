@@ -6,6 +6,6 @@
 
 (defn -main
   [& _args]
-  (let [{:keys [:udp-server]} (system/start)]
+  (when-let [{:keys [:udp-server]} (system/start)]
     ;; block until the server is stopped
     (c.udp-server/blocks-until-close udp-server)))

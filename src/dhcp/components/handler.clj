@@ -8,10 +8,10 @@
    (java.net
     DatagramSocket)))
 
-(defn make-handler [_config]
+(defn make-handler [config]
   (fn [^DatagramSocket socket
        ^DhcpMessage message]
-    (h/handler socket message)))
+    (h/handler socket config message)))
 
 (defrecord Handler [handler config]
   component/Lifecycle

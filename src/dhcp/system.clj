@@ -8,19 +8,18 @@
    [dhcp.components.udp-server :as c.udp-server]
    [unilog.config :as unilog]))
 
-(defn- new-system [config-path]
+(defn- new-system [_config server-config]
   (component/system-map
-   :config (c.config/load-config config-path)
-   :handler (component/using (c.handler/map->Handler {})
-                             [:config])
-   :udp-server (component/using (c.udp-server/map->UdpServer {})
-                                [:handler :config])))
+   :handler (c.handler/map->Handler {:config server-config})
+   :udp-server (component/using (c.udp-server/map->UdpServer {:config server-config})
+                                [:handler])))
 
 (defn start []
   (let [config (aero/read-config (io/resource "config.edn") {:profile :prod})
         _ (unilog/start-logging! (:logging config))
-        system (component/start (new-system (.getPath (io/resource "sample-config.yml"))))]
-    system))
+        server-config (c.config/load-config (.getPath (io/resource "sample-config.yml")))]
+    (when server-config
+      (component/start (new-system config (:config server-config))))))
 
 (defn stop [system]
   (component/stop system))
