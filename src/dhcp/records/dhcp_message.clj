@@ -110,7 +110,7 @@
         yiaddr (r.ip-address/bytes->ip-address (Arrays/copyOfRange data 16 20))
         siaddr (r.ip-address/bytes->ip-address (Arrays/copyOfRange data 20 24))
         giaddr (r.ip-address/bytes->ip-address (Arrays/copyOfRange data 24 28))
-        chaddr (vec (Arrays/copyOfRange data 28 44))
+        chaddr (vec (Arrays/copyOfRange data 28 (int (+ (min hlen 16) 28))))
         rest (Arrays/copyOfRange data 236 (.getLength datagram))
         options (if (option/start-with-magic-cookie? rest)
                   (option/parse-options (drop 4 rest))

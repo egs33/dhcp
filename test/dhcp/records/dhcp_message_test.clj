@@ -44,10 +44,7 @@
                :yiaddr (r.ip-address/->IpAddress 0)
                :siaddr (r.ip-address/->IpAddress 0)
                :giaddr (r.ip-address/->IpAddress 0)
-               :chaddr [11 22 33 44
-                        55 66 0 0
-                        0 0 0 0
-                        0 0 0 0]
+               :chaddr [11 22 33 44 55 66]
                :sname ""
                :file ""
                :options [{:code 53, :type :dhcp-message-type, :length 1, :value [1]}
@@ -99,10 +96,7 @@
                :yiaddr (r.ip-address/->IpAddress 0)
                :siaddr (r.ip-address/->IpAddress 0)
                :giaddr (r.ip-address/->IpAddress 0)
-               :chaddr [11 22 33 44
-                        55 66 0 0
-                        0 0 0 0
-                        0 0 0 0]
+               :chaddr [11 22 33 44 55 66]
                :sname ""
                :file ""
                :options [{:code 53, :type :dhcp-message-type, :length 1, :value [1]}
