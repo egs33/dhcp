@@ -68,12 +68,13 @@
                                         :offered-at (Instant/now)
                                         :leased-at (Instant/now)
                                         :expired-at (.plusSeconds (Instant/now) 40000)})]
-        ;; TODO
-        (is (nil?
-             (th/array->vec-recursively (sut/choose-ip-address sample-subnet
-                                                               db
-                                                               (byte-array [0 1 2 3 4 5])
-                                                               (byte-array [0 0 0 0]))))))))
+        (is (= {:pool (th/array->vec-recursively (first (:pools sample-subnet)))
+                :ip-address (th/byte-vec [192 168 0 1])
+                :lease-time 86400}
+               (th/array->vec-recursively (sut/choose-ip-address sample-subnet
+                                                                 db
+                                                                 (byte-array [0 1 2 3 4 5])
+                                                                 nil)))))))
   (testing "not reserved, already leased and active"
     (let [db (c.database/create-database "memory")
           _ (c.database/add-lease db {:client-id (byte-array [0 1 2 3 4 5])
@@ -109,4 +110,71 @@
              (th/array->vec-recursively (sut/choose-ip-address sample-subnet
                                                                db
                                                                (byte-array [0 1 2 3 4 5])
-                                                               (byte-array [0 0 0 0]))))))))
+                                                               (byte-array [0 0 0 0])))))))
+  (testing "not reserved, not leased"
+    (testing "ip address requested"
+      (testing "available"
+        (let [db (c.database/create-database "memory")]
+          (is (= {:pool (th/array->vec-recursively (first (:pools sample-subnet)))
+                  :ip-address (th/byte-vec [192 168 0 50])
+                  :lease-time 86400}
+                 (th/array->vec-recursively (sut/choose-ip-address sample-subnet
+                                                                   db
+                                                                   (byte-array [0 1 2 3 4 5])
+                                                                   (byte-array [192 168 0 50])))))))
+      (testing "unavailable"
+        (let [db (c.database/create-database "memory")]
+          (c.database/add-lease db {:client-id (byte-array [0 11 22 33 44 55])
+                                    :hw-address (byte-array [0 11 22 33 44 55])
+                                    :ip-address (byte-array [192 168 0 50])
+                                    :hostname "reserved-host"
+                                    :lease-time 86400
+                                    :status "lease"
+                                    :offered-at (Instant/now)
+                                    :leased-at (Instant/now)
+                                    :expired-at (.plusSeconds (Instant/now) 2)})
+          (is (= {:pool (th/array->vec-recursively (first (:pools sample-subnet)))
+                  :ip-address (th/byte-vec [192 168 0 1])
+                  :lease-time 86400}
+                 (th/array->vec-recursively (sut/choose-ip-address sample-subnet
+                                                                   db
+                                                                   (byte-array [0 1 2 3 4 5])
+                                                                   (byte-array [192 168 0 50])))))))
+      (testing "request out of range"
+        (let [db (c.database/create-database "memory")]
+          (is (= {:pool (th/array->vec-recursively (first (:pools sample-subnet)))
+                  :ip-address (th/byte-vec [192 168 0 1])
+                  :lease-time 86400}
+                 (th/array->vec-recursively (sut/choose-ip-address sample-subnet
+                                                                   db
+                                                                   (byte-array [0 1 2 3 4 5])
+                                                                   (byte-array [172 16 0 50]))))))))
+    (testing "ip address not requested"
+      (testing "no addresses leased"
+        (let [db (c.database/create-database "memory")]
+          (is (= {:pool (th/array->vec-recursively (first (:pools sample-subnet)))
+                  :ip-address (th/byte-vec [192 168 0 1])
+                  :lease-time 86400}
+                 (th/array->vec-recursively (sut/choose-ip-address sample-subnet
+                                                                   db
+                                                                   (byte-array [0 1 2 3 4 5])
+                                                                   nil))))))
+      (testing "some addresses leased"
+        (let [db (c.database/create-database "memory")]
+          (doseq [i (range 100)]
+            (c.database/add-lease db {:client-id (byte-array [i 11 22 33 44 55])
+                                      :hw-address (byte-array [i 11 22 33 44 55])
+                                      :ip-address (byte-array [192 168 0 i])
+                                      :hostname (str "reserved-host" i)
+                                      :lease-time 86400
+                                      :status "lease"
+                                      :offered-at (Instant/now)
+                                      :leased-at (Instant/now)
+                                      :expired-at (.plusSeconds (Instant/now) 2)}))
+          (is (= {:pool (th/array->vec-recursively (first (:pools sample-subnet)))
+                  :ip-address (th/byte-vec [192 168 0 100])
+                  :lease-time 86400}
+                 (th/array->vec-recursively (sut/choose-ip-address sample-subnet
+                                                                   db
+                                                                   (byte-array [0 1 2 3 4 5])
+                                                                   nil)))))))))
