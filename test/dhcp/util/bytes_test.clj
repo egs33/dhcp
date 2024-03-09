@@ -23,3 +23,15 @@
     [192 168 0 1] 3232235521 4
     [255 255 255 255] 4294967295 4
     [0 1 0 0 0 0] 4294967296 6))
+
+(deftest equal?-test
+  (are [expected ba1 ba2] (= expected
+                             (u.bytes/equal? ba1 ba2))
+    true (byte-array []) (byte-array [])
+    true (byte-array [100]) (byte-array [100])
+    true (byte-array [128]) (byte-array [-128])
+    true (byte-array [255 0 255]) (byte-array [255 0 255])
+    false (byte-array []) (byte-array [1])
+    false (byte-array [2]) (byte-array [1])
+    false (byte-array [10 20 30]) (byte-array [10 21 31])
+    false (byte-array [1]) (byte-array [0 1])))
