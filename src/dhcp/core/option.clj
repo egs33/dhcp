@@ -170,6 +170,9 @@
          :value (subvec bytes 2 (+ 2 len))}))))
 
 (defn parse-options [^bytes bytes]
+  ;; TODO The client concatenates
+  ;;   the values of multiple instances of the same option into a single
+  ;;   parameter list for configuration.
   (loop [rest (vec bytes)
          options (transient [])]
     (if (seq rest)
