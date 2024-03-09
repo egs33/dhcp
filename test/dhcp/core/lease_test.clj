@@ -177,4 +177,69 @@
                  (th/array->vec-recursively (sut/choose-ip-address sample-subnet
                                                                    db
                                                                    (byte-array [0 1 2 3 4 5])
+                                                                   nil))))))
+      (testing "pool is full"
+        (let [db (c.database/create-database "memory")]
+          (doseq [i (range 256)]
+            (c.database/add-lease db {:client-id (byte-array [i 11 22 33 44 55])
+                                      :hw-address (byte-array [i 11 22 33 44 55])
+                                      :ip-address (byte-array [192 168 0 i])
+                                      :hostname (str "reserved-host" i)
+                                      :lease-time 86400
+                                      :status "lease"
+                                      :offered-at (Instant/now)
+                                      :leased-at (Instant/now)
+                                      :expired-at (.plusSeconds (Instant/now) 2)}))
+          (is (nil? (sut/choose-ip-address sample-subnet
+                                           db
+                                           (byte-array [0 1 2 3 4 5])
+                                           nil)))))
+      (testing "multi pools"
+        (let [db (c.database/create-database "memory")
+              subnet {:start-address (r.ip-address/str->ip-address "192.168.0.0")
+                      :end-address (r.ip-address/str->ip-address "192.168.0.255")
+                      :pools [{:start-address (r.ip-address/str->ip-address "192.168.0.1")
+                               :end-address (r.ip-address/str->ip-address "192.168.0.10")
+                               :only-reserved-lease false
+                               :lease-time 86400
+                               :reservation []
+                               :options []}
+                              {:start-address (r.ip-address/str->ip-address "192.168.0.11")
+                               :end-address (r.ip-address/str->ip-address "192.168.0.20")
+                               :only-reserved-lease true
+                               :lease-time 86400
+                               :reservation []
+                               :options []}
+                              {:start-address (r.ip-address/str->ip-address "192.168.0.21")
+                               :end-address (r.ip-address/str->ip-address "192.168.0.30")
+                               :only-reserved-lease false
+                               :lease-time 86400
+                               :reservation []
+                               :options []}]}]
+          (doseq [i (range 1 11)]
+            (c.database/add-lease db {:client-id (byte-array [i 11 22 33 44 55])
+                                      :hw-address (byte-array [i 11 22 33 44 55])
+                                      :ip-address (byte-array [192 168 0 i])
+                                      :hostname (str "reserved-host" i)
+                                      :lease-time 86400
+                                      :status "lease"
+                                      :offered-at (Instant/now)
+                                      :leased-at (Instant/now)
+                                      :expired-at (.plusSeconds (Instant/now) 2)}))
+          (doseq [i (range 21 25)]
+            (c.database/add-lease db {:client-id (byte-array [i 11 22 33 44 55])
+                                      :hw-address (byte-array [i 11 22 33 44 55])
+                                      :ip-address (byte-array [192 168 0 i])
+                                      :hostname (str "reserved-host" i)
+                                      :lease-time 86400
+                                      :status "lease"
+                                      :offered-at (Instant/now)
+                                      :leased-at (Instant/now)
+                                      :expired-at (.plusSeconds (Instant/now) 2)}))
+          (is (= {:pool (th/array->vec-recursively (nth (:pools subnet) 2))
+                  :ip-address (th/byte-vec [192 168 0 25])
+                  :lease-time 86400}
+                 (th/array->vec-recursively (sut/choose-ip-address subnet
+                                                                   db
+                                                                   (byte-array [0 1 2 3 4 5])
                                                                    nil)))))))))
