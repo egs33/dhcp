@@ -73,4 +73,40 @@
              (th/array->vec-recursively (sut/choose-ip-address sample-subnet
                                                                db
                                                                (byte-array [0 1 2 3 4 5])
-                                                               (byte-array [0 0 0 0])))))))))
+                                                               (byte-array [0 0 0 0]))))))))
+  (testing "not reserved, already leased and active"
+    (let [db (c.database/create-database "memory")
+          _ (c.database/add-lease db {:client-id (byte-array [0 1 2 3 4 5])
+                                      :hw-address (byte-array [0 1 2 3 4 5])
+                                      :ip-address (byte-array [192 168 0 50])
+                                      :hostname "reserved-host"
+                                      :lease-time 86400
+                                      :status "lease"
+                                      :offered-at (Instant/now)
+                                      :leased-at (Instant/now)
+                                      :expired-at (.plusSeconds (Instant/now) 40000)})]
+      (is (= {:pool (th/array->vec-recursively (first (:pools sample-subnet)))
+              :ip-address (th/byte-vec [192 168 0 50])
+              :lease-time 39999}
+             (th/array->vec-recursively (sut/choose-ip-address sample-subnet
+                                                               db
+                                                               (byte-array [0 1 2 3 4 5])
+                                                               (byte-array [0 0 0 0])))))))
+  (testing "not reserved, lease expired and not used by other host"
+    (let [db (c.database/create-database "memory")
+          _ (c.database/add-lease db {:client-id (byte-array [0 1 2 3 4 5])
+                                      :hw-address (byte-array [0 1 2 3 4 5])
+                                      :ip-address (byte-array [192 168 0 50])
+                                      :hostname "reserved-host"
+                                      :lease-time 86400
+                                      :status "lease"
+                                      :offered-at (Instant/now)
+                                      :leased-at (Instant/now)
+                                      :expired-at (.minusSeconds (Instant/now) 1)})]
+      (is (= {:pool (th/array->vec-recursively (first (:pools sample-subnet)))
+              :ip-address (th/byte-vec [192 168 0 50])
+              :lease-time 86400}
+             (th/array->vec-recursively (sut/choose-ip-address sample-subnet
+                                                               db
+                                                               (byte-array [0 1 2 3 4 5])
+                                                               (byte-array [0 0 0 0]))))))))
