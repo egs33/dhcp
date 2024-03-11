@@ -73,7 +73,8 @@
                         (r.ip-address/->bytes yiaddr)
                         (r.ip-address/->bytes siaddr)
                         (r.ip-address/->bytes giaddr)
-                        chaddr
+                        (->> (concat chaddr (repeat 0))
+                             (take 16))
                         (str->bytes sname 64)
                         (str->bytes file 128)
                         (option/options->bytes options))))
