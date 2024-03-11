@@ -4,11 +4,14 @@
    [clojure.string :as str]
    [clojure.tools.logging :as log]
    [dhcp.records.ip-address :as r.ip-address]
+   [dhcp.util.bytes :as u.bytes]
    [malli.core :as m]
    [malli.error :as me])
   (:import
    (clojure.lang
-    ExceptionInfo)))
+    ExceptionInfo)
+   (java.net
+    Inet4Address)))
 
 (defn- normalize-reservations
   [{:keys [:s-idx :p-idx :pool-start :pool-end]}
@@ -218,7 +221,19 @@
              []
              error))
 
-(defrecord Config [config])
+(defprotocol IConfig
+  (select-subnet [this ^Inet4Address ip-address]))
+
+(defrecord Config [config]
+  IConfig
+  (select-subnet [_ ip-address]
+    (let [ip-addr (u.bytes/bytes->number (.getAddress ip-address))]
+      (->> (:subnets config)
+           (filter (fn [{:keys [start-address end-address]}]
+                     (<= (r.ip-address/->int start-address)
+                         ip-addr
+                         (r.ip-address/->int end-address))))
+           first))))
 
 (defn load-config [^String path]
   (let [yml-str (slurp path)
