@@ -1,7 +1,9 @@
 (ns dhcp.components.database
   (:require
+   [clojure.tools.logging :as log]
    [dhcp.util.bytes :as u.bytes]
    [malli.core :as m]
+   [malli.error :as me]
    [malli.experimental.time :as met]
    [malli.registry :as mr])
   (:import
@@ -38,6 +40,8 @@
 
 (defn assert-reservation [reservation]
   (when-not (m/validate ReservationSchema reservation)
+    (log/debugf "Invalid reservation: %s"
+                (me/humanize (m/explain ReservationSchema reservation)))
     (throw (IllegalArgumentException. "Invalid reservation"))))
 
 (def ^:private LeaseSchema
@@ -64,6 +68,7 @@
 
 (defn assert-lease [lease]
   (when-not (m/validate LeaseSchema lease)
+    (log/debugf "Invalid lease: %s" (me/humanize (m/explain LeaseSchema lease)))
     (throw (IllegalArgumentException. "Invalid lease"))))
 
 (defrecord ^{:doc "Database Implementation for development. Clear data after restart."
