@@ -47,7 +47,12 @@
           client-id (r.dhcp-message/get-option message 61)]
       (if-let [{:keys [:pool :ip-address :status :lease-time]} (core.lease/choose-ip-address
                                                                 subnet db (:chaddr message) requested-addr)]
-        (let [now (Instant/now)
+        (let [lease-time-opt (some-> (r.dhcp-message/get-option message 51)
+                                     byte-array
+                                     u.bytes/bytes->number)
+              lease-time (cond-> lease-time
+                           lease-time-opt (min lease-time-opt))
+              now (Instant/now)
               _ (when (= status :new)
                   (c.database/delete-lease db
                                            (:chaddr message)
