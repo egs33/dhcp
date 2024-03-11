@@ -24,7 +24,7 @@
   (get-all-leases [this])
   (find-leases-by-hw-address [this ^bytes hw-address])
   (find-leases-by-ip-address-range [this ^bytes start-address ^bytes end-address])
-  (delete-lease [this ^bytes hw-address ^bytes ip-address]))
+  (delete-lease [this ^bytes hw-address ^bytes start-address ^bytes end-address]))
 
 (def ^:private ReservationSchema
   [:map {:closed true}
@@ -112,9 +112,10 @@
           end (u.bytes/bytes->number end-address)]
       (->> (:lease @state)
            (filter #(<= start (u.bytes/bytes->number (:ip-address %)) end)))))
-  (delete-lease [_ hw-address ip-address]
+  (delete-lease [_ hw-address start-address end-address]
     (let [hw-value (u.bytes/bytes->number hw-address)
-          ip-value (u.bytes/bytes->number ip-address)]
+          s-ip-value (u.bytes/bytes->number start-address)
+          e-ip-value (u.bytes/bytes->number end-address)]
       (swap! state
              (fn [current]
                (update current
@@ -122,8 +123,9 @@
                        (fn [coll]
                          (remove #(and (= (u.bytes/bytes->number (:hw-address %))
                                           hw-value)
-                                       (= (u.bytes/bytes->number (:ip-address %))
-                                          ip-value))
+                                       (<= s-ip-value
+                                           (u.bytes/bytes->number (:ip-address %))
+                                           e-ip-value))
                                  coll))))))))
 
 (defn- new-memory-database []

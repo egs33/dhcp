@@ -441,6 +441,15 @@
                            :offered-at now
                            :leased-at now
                            :expired-at now})
+        (sut/add-lease db {:client-id (byte-array [1 2 3 4 5 6])
+                           :hw-address (byte-array [1 2 3 4 5 6])
+                           :ip-address (byte-array [192 168 0 2])
+                           :hostname "host1 (2)"
+                           :lease-time 86400
+                           :status "lease"
+                           :offered-at now
+                           :leased-at now
+                           :expired-at now})
         (sut/add-lease db {:client-id (byte-array [10 20 30])
                            :hw-address (byte-array [10 20 30])
                            :ip-address (byte-array [172 16 0 19])
@@ -461,12 +470,12 @@
                            :expired-at now})
         (testing "delete no entry"
           (sut/delete-lease
-           db (byte-array [10 20 30 40 50 60]) (byte-array [192 168 0 1]))
-          (is (= 3
+           db (byte-array [10 20 30 40 50 60]) (byte-array [192 168 0 1]) (byte-array [192 168 0 255]))
+          (is (= 4
                  (count (sut/get-all-leases db)))))
         (testing "delete 1 entry"
           (sut/delete-lease
-           db (byte-array [10 20 30]) (byte-array [172 16 0 19]))
+           db (byte-array [10 20 30]) (byte-array [172 16 0 0]) (byte-array [172 16 0 255]))
           (is (= [{:client-id (th/byte-vec [1 2 3 4 5 6])
                    :hw-address (th/byte-vec [1 2 3 4 5 6])
                    :ip-address (th/byte-vec [192 168 0 1])
@@ -476,7 +485,29 @@
                    :offered-at now
                    :leased-at now
                    :expired-at now}
+                  {:client-id (th/byte-vec [1 2 3 4 5 6])
+                   :hw-address (th/byte-vec [1 2 3 4 5 6])
+                   :ip-address (th/byte-vec [192 168 0 2])
+                   :hostname "host1 (2)"
+                   :lease-time 86400
+                   :status "lease"
+                   :offered-at now
+                   :leased-at now
+                   :expired-at now}
                   {:client-id (th/byte-vec [40 50 60])
+                   :hw-address (th/byte-vec [40 50 60])
+                   :ip-address (th/byte-vec [172 16 0 58])
+                   :hostname "tablet10"
+                   :lease-time 7200
+                   :status "offer"
+                   :offered-at now
+                   :leased-at nil
+                   :expired-at now}]
+                 (th/array->vec-recursively (sut/get-all-leases db)))))
+        (testing "delete 2 entry"
+          (sut/delete-lease
+           db (byte-array [1 2 3 4 5 6]) (byte-array [192 168 0 1]) (byte-array [192 168 0 255]))
+          (is (= [{:client-id (th/byte-vec [40 50 60])
                    :hw-address (th/byte-vec [40 50 60])
                    :ip-address (th/byte-vec [172 16 0 58])
                    :hostname "tablet10"
