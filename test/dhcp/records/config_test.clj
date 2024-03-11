@@ -60,7 +60,8 @@
                                      :only-reserved-lease false
                                      :lease-time 3600
                                      :reservation []
-                                     :options [{:code 3, :type :router, :length 4, :value [192 168 0 1]}
+                                     :options [{:code 1, :type :subnet-mask, :length 4, :value [255 255 255 0]}
+                                               {:code 3, :type :router, :length 4, :value [192 168 0 1]}
                                                {:code 6, :type :domain-server, :length 4, :value [192 168 0 2]}]}]}],
                  :database {:type "memory"}})
                config)
@@ -78,7 +79,8 @@
                                      :lease-time 10800
                                      :reservation [{:hw-address [0 0 0 0 0 1], :ip-address (r.ip-address/str->ip-address "192.168.0.50")}
                                                    {:hw-address [0 0 0 0 0 2], :ip-address (r.ip-address/str->ip-address "192.168.0.60")}]
-                                     :options [{:code 3, :type :router, :length 4, :value [192 168 0 1]}
+                                     :options [{:code 1, :type :subnet-mask, :length 4, :value [255 255 255 128]}
+                                               {:code 3, :type :router, :length 4, :value [192 168 0 1]}
                                                {:code 6, :type :domain-server, :length 4, :value [192 168 0 2]}
                                                {:code 190, :length 0, :value []}
                                                {:code 191, :length 3, :value [-1 -1 -1]}
@@ -90,7 +92,8 @@
                                      :lease-time 50000
                                      :reservation [{:hw-address [0 0 0 17 17 17], :ip-address (r.ip-address/str->ip-address "192.168.0.70")}
                                                    {:hw-address [0 0 0 34 34 34], :ip-address (r.ip-address/str->ip-address "192.168.0.72")}]
-                                     :options [{:code 3, :type :router, :length 4, :value [192 168 0 1]}
+                                     :options [{:code 1, :type :subnet-mask, :length 4, :value [255 255 255 128]}
+                                               {:code 3, :type :router, :length 4, :value [192 168 0 1]}
                                                {:code 6, :type :domain-server, :length 4, :value [192 168 0 2]}
                                                {:code 190, :length 0, :value []}
                                                {:code 191, :length 3, :value [-1 -1 -1]}
@@ -104,7 +107,8 @@
                                      :lease-time 10800
                                      :reservation [{:hw-address [0 0 0 -86 -86 -86], :ip-address (r.ip-address/str->ip-address "172.16.10.0")}
                                                    {:hw-address [0 0 0 -69 -69 -69], :ip-address (r.ip-address/str->ip-address "172.16.10.1")}]
-                                     :options [{:code 3, :type :router, :length 4, :value [172 16 100 0]}
+                                     :options [{:code 1, :type :subnet-mask, :length 4, :value [255 255 0 0]}
+                                               {:code 3, :type :router, :length 4, :value [172 16 100 0]}
                                                {:code 6, :type :domain-server, :length 8, :value [172 16 100 1 172 16 100 2]}
                                                {:code 190, :length 0, :value []}
                                                {:code 230, :length 5, :value [1 2 3 4 5]}

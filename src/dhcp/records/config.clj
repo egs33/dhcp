@@ -87,6 +87,7 @@
                              (dec (bit-shift-left 1 (- 32 (parse-long bits)))))
                      r.ip-address/->IpAddress)
         start-addr (r.ip-address/->IpAddress start-addr)
+        subnet-option {:code 1, :type :subnet-mask, :length 4, :value (u.bytes/number->byte-coll subnet-mask 4)}
         router-option {:code 3, :type :router, :length 4, :value (-> router
                                                                      r.ip-address/str->ip-address
                                                                      r.ip-address/->bytes)}
@@ -101,7 +102,7 @@
                                                      :lease-time (or lease-time root-lease-time)
                                                      :start-addr start-addr
                                                      :end-addr end-addr
-                                                     :subnet-options (concat [router-option dns-option]
+                                                     :subnet-options (concat [subnet-option router-option dns-option]
                                                                              options)})
                            pools)]
     {:start-address start-addr
