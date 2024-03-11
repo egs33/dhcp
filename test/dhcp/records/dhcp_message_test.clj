@@ -148,3 +148,38 @@
                                             :file ""
                                             :options [{:code 53, :type :dhcp-message-type, :length 1, :value [1]}
                                                       {:code 0, :type :pad, :length 0, :value []}]}))))))))
+
+(deftest get-option-test
+  (let [message (r.dhcp-message/map->DhcpMessage
+                 {:local-address nil
+                  :op :BOOTREQUEST
+                  :htype (byte 1)
+                  :hlen (byte 6)
+                  :hops (byte 0)
+                  :xid 135280220
+                  :secs 0
+                  :flags 0
+                  :ciaddr (r.ip-address/->IpAddress 0)
+                  :yiaddr (r.ip-address/->IpAddress 0)
+                  :siaddr (r.ip-address/->IpAddress 0)
+                  :giaddr (r.ip-address/->IpAddress 0)
+                  :chaddr [11 22 33 44
+                           55 66 0 0
+                           0 0 0 0
+                           0 0 0 0]
+                  :sname ""
+                  :file ""
+                  :options [{:code 53, :type :dhcp-message-type, :length 1, :value [1]}
+                            {:code 61, :type :client-identifier, :length 7, :value [1 11 22 33 44 55 66]}
+                            {:code 0, :type :pad, :length 0, :value []}]})]
+    (testing "get empty value"
+      (is (= []
+             (r.dhcp-message/get-option message 0))))
+    (testing "get length:1 value"
+      (is (= [1]
+             (r.dhcp-message/get-option message 53))))
+    (testing "get length:7 value"
+      (is (= [1 11 22 33 44 55 66]
+             (r.dhcp-message/get-option message 61))))
+    (testing "option not found"
+      (is (nil? (r.dhcp-message/get-option message 50))))))

@@ -20,7 +20,8 @@
 
 (defprotocol IDhcpMessage
   (getType [this])
-  (->bytes [this]))
+  (->bytes [this])
+  (get-option [this code]))
 
 (def ^Charset US-ASCII (Charset/forName "US-ASCII"))
 
@@ -75,7 +76,12 @@
                         chaddr
                         (str->bytes sname 64)
                         (str->bytes file 128)
-                        (option/options->bytes options)))))
+                        (option/options->bytes options))))
+  (get-option [_ code]
+    (->> options
+         (filter #(= (:code %) code))
+         first
+         :value)))
 
 (defn- bytes->str
   "convert null terminated bytes to string"
