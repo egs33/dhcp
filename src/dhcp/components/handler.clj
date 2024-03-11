@@ -3,6 +3,7 @@
    [com.stuartsierra.component :as component]
    [dhcp.components.database]
    [dhcp.handler :as h]
+   [dhcp.handler.dhcp-discover]
    [dhcp.records.config])
   (:import
    (dhcp.components.database
