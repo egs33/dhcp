@@ -1,6 +1,7 @@
 (ns dhcp.handler
   (:require
    [clojure.tools.logging :as log]
+   [dhcp.records.config]
    [dhcp.records.dhcp-message :as r.dhcp-message])
   (:import
    (dhcp.components.database
