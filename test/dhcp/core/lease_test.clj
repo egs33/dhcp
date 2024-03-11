@@ -28,6 +28,7 @@
                                                 :source "config"}])]
         (is (= {:pool (th/array->vec-recursively (first (:pools sample-subnet)))
                 :ip-address (th/byte-vec [192 168 0 50])
+                :status :new
                 :lease-time 86400}
                (th/array->vec-recursively (sut/choose-ip-address sample-subnet
                                                                  db
@@ -49,7 +50,30 @@
                                         :expired-at (.plusSeconds (Instant/now) 40000)})]
         (is (= {:pool (th/array->vec-recursively (first (:pools sample-subnet)))
                 :ip-address (th/byte-vec [192 168 0 50])
+                :status :leasing
                 :lease-time 39999}
+               (th/array->vec-recursively (sut/choose-ip-address sample-subnet
+                                                                 db
+                                                                 (byte-array [0 1 2 3 4 5])
+                                                                 (byte-array [0 0 0 0])))))))
+    (testing "already leased by same host but expired"
+      (let [db (c.database/create-database "memory")
+            _ (c.database/add-reservations db [{:hw-address (byte-array [0 1 2 3 4 5])
+                                                :ip-address (byte-array [192 168 0 50])
+                                                :source "config"}])
+            _ (c.database/add-lease db {:client-id (byte-array [0 1 2 3 4 5])
+                                        :hw-address (byte-array [0 1 2 3 4 5])
+                                        :ip-address (byte-array [192 168 0 50])
+                                        :hostname "reserved-host"
+                                        :lease-time 86400
+                                        :status "lease"
+                                        :offered-at (Instant/now)
+                                        :leased-at (Instant/now)
+                                        :expired-at (.minusSeconds (Instant/now) 1)})]
+        (is (= {:pool (th/array->vec-recursively (first (:pools sample-subnet)))
+                :ip-address (th/byte-vec [192 168 0 50])
+                :status :new
+                :lease-time 86400}
                (th/array->vec-recursively (sut/choose-ip-address sample-subnet
                                                                  db
                                                                  (byte-array [0 1 2 3 4 5])
@@ -70,6 +94,7 @@
                                         :expired-at (.plusSeconds (Instant/now) 40000)})]
         (is (= {:pool (th/array->vec-recursively (first (:pools sample-subnet)))
                 :ip-address (th/byte-vec [192 168 0 1])
+                :status :new
                 :lease-time 86400}
                (th/array->vec-recursively (sut/choose-ip-address sample-subnet
                                                                  db
@@ -88,6 +113,7 @@
                                       :expired-at (.plusSeconds (Instant/now) 40000)})]
       (is (= {:pool (th/array->vec-recursively (first (:pools sample-subnet)))
               :ip-address (th/byte-vec [192 168 0 50])
+              :status :leasing
               :lease-time 39999}
              (th/array->vec-recursively (sut/choose-ip-address sample-subnet
                                                                db
@@ -106,6 +132,7 @@
                                       :expired-at (.minusSeconds (Instant/now) 1)})]
       (is (= {:pool (th/array->vec-recursively (first (:pools sample-subnet)))
               :ip-address (th/byte-vec [192 168 0 50])
+              :status :new
               :lease-time 86400}
              (th/array->vec-recursively (sut/choose-ip-address sample-subnet
                                                                db
@@ -117,6 +144,7 @@
         (let [db (c.database/create-database "memory")]
           (is (= {:pool (th/array->vec-recursively (first (:pools sample-subnet)))
                   :ip-address (th/byte-vec [192 168 0 50])
+                  :status :new
                   :lease-time 86400}
                  (th/array->vec-recursively (sut/choose-ip-address sample-subnet
                                                                    db
@@ -135,6 +163,7 @@
                                     :expired-at (.plusSeconds (Instant/now) 2)})
           (is (= {:pool (th/array->vec-recursively (first (:pools sample-subnet)))
                   :ip-address (th/byte-vec [192 168 0 1])
+                  :status :new
                   :lease-time 86400}
                  (th/array->vec-recursively (sut/choose-ip-address sample-subnet
                                                                    db
@@ -144,6 +173,7 @@
         (let [db (c.database/create-database "memory")]
           (is (= {:pool (th/array->vec-recursively (first (:pools sample-subnet)))
                   :ip-address (th/byte-vec [192 168 0 1])
+                  :status :new
                   :lease-time 86400}
                  (th/array->vec-recursively (sut/choose-ip-address sample-subnet
                                                                    db
@@ -154,6 +184,7 @@
         (let [db (c.database/create-database "memory")]
           (is (= {:pool (th/array->vec-recursively (first (:pools sample-subnet)))
                   :ip-address (th/byte-vec [192 168 0 1])
+                  :status :new
                   :lease-time 86400}
                  (th/array->vec-recursively (sut/choose-ip-address sample-subnet
                                                                    db
@@ -173,6 +204,7 @@
                                       :expired-at (.plusSeconds (Instant/now) 2)}))
           (is (= {:pool (th/array->vec-recursively (first (:pools sample-subnet)))
                   :ip-address (th/byte-vec [192 168 0 100])
+                  :status :new
                   :lease-time 86400}
                  (th/array->vec-recursively (sut/choose-ip-address sample-subnet
                                                                    db
@@ -238,6 +270,7 @@
                                       :expired-at (.plusSeconds (Instant/now) 2)}))
           (is (= {:pool (th/array->vec-recursively (nth (:pools subnet) 2))
                   :ip-address (th/byte-vec [192 168 0 25])
+                  :status :new
                   :lease-time 86400}
                  (th/array->vec-recursively (sut/choose-ip-address subnet
                                                                    db

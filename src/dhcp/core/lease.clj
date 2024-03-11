@@ -46,11 +46,17 @@
              (or (nil? current-lease)
                  ;; TODO: consider client-identifier
                  (u.bytes/equal? (:hw-address current-lease) hw-address)))
-      {:pool (:pool rp)
-       :ip-address reservation-addr
-       :lease-time (if current-lease
-                     (.between ChronoUnit/SECONDS (Instant/now) (:expired-at current-lease))
-                     (get-in rp [:pool :lease-time]))}
+      (let [lifetime (when current-lease
+                       (.between ChronoUnit/SECONDS (Instant/now) (:expired-at current-lease)))]
+        (if (and lifetime (pos? lifetime))
+          {:pool (:pool rp)
+           :ip-address reservation-addr
+           :status :leasing
+           :lease-time lifetime}
+          {:pool (:pool rp)
+           :ip-address reservation-addr
+           :status :new
+           :lease-time (get-in rp [:pool :lease-time])}))
       (let [host-lease (->> (c.database/find-leases-by-hw-address db hw-address)
                             (filter #(<= (r.ip-address/->int (:start-address subnet))
                                          (u.bytes/bytes->number (:ip-address %))
@@ -61,6 +67,7 @@
                (.isBefore (Instant/now) (:expired-at host-lease)))
           {:pool (select-pool-by-ip-address subnet (:ip-address host-lease))
            :ip-address (:ip-address host-lease)
+           :status :leasing
            :lease-time (.between ChronoUnit/SECONDS (Instant/now) (:expired-at host-lease))}
 
           ;; lease is expired and not used by other host
@@ -73,6 +80,7 @@
           (let [pool (select-pool-by-ip-address subnet (:ip-address host-lease))]
             {:pool pool
              :ip-address (:ip-address host-lease)
+             :status :new
              :lease-time (:lease-time pool)})
 
           :else
@@ -87,6 +95,7 @@
               (let [pool (select-pool-by-ip-address subnet requested-addr)]
                 {:pool pool
                  :ip-address requested-addr
+                 :status :new
                  :lease-time (:lease-time pool)})
               (let [current-leases-ips (->> (c.database/find-leases-by-ip-address-range
                                              db (r.ip-address/->byte-array (:start-address subnet))
@@ -108,4 +117,5 @@
                 (when available-ip
                   {:pool pool
                    :ip-address available-ip
+                   :status :new
                    :lease-time (:lease-time pool)})))))))))
