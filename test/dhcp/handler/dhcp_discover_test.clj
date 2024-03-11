@@ -36,7 +36,7 @@
                       :file ""
                       :options [{:code 53, :type :dhcp-message-type, :length 1, :value [1]}
                                 {:code 61, :type :client-identifier, :length 7, :value [1 11 22 33 44 55 66]}
-                                {:code 55, :type :parameter-list, :length 2, :value [1 3]}
+                                {:code 55, :type :parameter-list, :length 2, :value [3 1]}
                                 {:code 0, :type :pad, :length 0, :value []}]}))
 
 (def sample-subnet {:start-address (r.ip-address/str->ip-address "192.168.0.0")
@@ -119,8 +119,8 @@
                    :options [{:code 53, :length 1, :type :dhcp-message-type, :value [2]}
                              {:code 51, :length 4, :type :address-time, :value [0 0 14 16]}
                              {:code 54, :length 4, :type :dhcp-server-id, :value [-64 -88 0 100]}
-                             {:code 1, :length 4, :type :subnet-mask, :value [-1 -1 -1 0]}
                              {:code 3, :length 4, :type :router, :value [-64 -88 0 1]}
+                             {:code 1, :length 4, :type :subnet-mask, :value [-1 -1 -1 0]}
                              {:code 255, :length 0, :type :end, :value []}]
                    :sname ""}
                   (-> (r.dhcp-message/parse-message (Inet4Address/getByAddress (byte-array [192 168 0 100]))

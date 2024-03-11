@@ -68,16 +68,17 @@
                                             :offered-at now
                                             :leased-at nil
                                             :expired-at (.plusSeconds now lease-time)}))
+              options-by-code (reduce #(assoc %1 (:code %2) %2) {} (:options pool))
               requested-params (->> (r.dhcp-message/get-option message 55)
                                     (map #(Byte/toUnsignedInt %))
-                                    set)
+                                    distinct
+                                    (keep #(get options-by-code %)))
               options (concat [{:code 53, :type :dhcp-message-type, :length 1, :value [DHCPOFFER]}
                                {:code 51, :type :ip-address-lease-time
                                 :length 4, :value (u.bytes/number->byte-coll lease-time 4)}
                                {:code 54, :type :server-identifier
                                 :length 4, :value (vec (.getAddress (:local-address message)))}]
-                              (filter #(contains? requested-params (:code %))
-                                      (:options pool))
+                              requested-params
                               [{:code 255, :type :end, :length 1, :value []}])
               reply (r.dhcp-message/map->DhcpMessage
                      {:local-address nil
