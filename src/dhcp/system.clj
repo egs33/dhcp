@@ -18,10 +18,11 @@
    :udp-server (component/using (c.udp-server/map->UdpServer {:config server-config})
                                 [:handler])))
 
-(defn start []
+(defn start [options]
   (let [config (aero/read-config (io/resource "config.edn") {:profile :prod})
-        _ (unilog/start-logging! (:logging config))
-        server-config (r.config/load-config (.getPath (io/resource "sample-config.yml")))]
+        _ (unilog/start-logging! (cond-> (:logging config)
+                                   (:debug options) (assoc :level :debug)))
+        server-config (r.config/load-config (:config options))]
     (when server-config
       (component/start (new-system config (:config server-config))))))
 
