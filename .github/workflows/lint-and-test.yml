@@ -28,16 +28,16 @@ jobs:
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: zulu
+          java-version: ${{ matrix.java }}
       - uses: actions/cache@v4
         with:
           path: rocksaw-1.1.0-src.tar.gz
           key: rocksaw-src-1.1.0
       - name: build rocksaw
         run : ./build-rocksaw.sh
-      - uses: actions/setup-java@v4
-        with:
-          distribution: zulu
-          java-version: ${{ matrix.java }}
       - uses: DeLaGuardo/setup-clojure@12.5
         with:
           cli: latest
