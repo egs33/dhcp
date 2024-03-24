@@ -429,6 +429,9 @@
                    (th/array->vec-recursively
                     (sut/find-leases-by-ip-address-range
                      db (byte-array [172 16 0 58]) (byte-array [192 168 0 1])))))))))
+    (testing "update-lease-test"
+             ;; TODO
+             )
     (testing "delete-lease-tests"
       (let [db (sut/create-database "memory")
             now (Instant/now)]
