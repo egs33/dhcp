@@ -1,4 +1,7 @@
-(ns dhcp.util.bytes)
+(ns dhcp.util.bytes
+  (:import
+   (java.util
+    HexFormat)))
 
 (defn bytes->number [^bytes bytes]
   (reduce (fn [acc b]
@@ -18,3 +21,8 @@
   (and (= (count ba1) (count ba2))
        (every? identity
                (map = ba1 ba2))))
+
+(def ^:private hex (HexFormat/of))
+
+(defn ->str [^bytes b]
+  (.formatHex hex b))

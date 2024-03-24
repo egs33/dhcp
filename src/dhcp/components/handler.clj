@@ -4,6 +4,7 @@
    [dhcp.components.database]
    [dhcp.handler :as h]
    [dhcp.handler.dhcp-discover]
+   [dhcp.handler.dhcp-request]
    [dhcp.records.config])
   (:import
    (dhcp.components.database

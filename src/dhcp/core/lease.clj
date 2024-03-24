@@ -11,7 +11,7 @@
    (java.time.temporal
     ChronoUnit)))
 
-(defn- select-pool-by-ip-address [subnet ^bytes ip-address]
+(defn select-pool-by-ip-address [subnet ^bytes ip-address]
   (->> (:pools subnet)
        (filter #(<= (r.ip-address/->int (:start-address %))
                     (u.bytes/bytes->number ip-address)
