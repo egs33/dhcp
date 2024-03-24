@@ -11,3 +11,6 @@
 .nrepl-port
 target
 classes
+
+lib/*.so
+/rocksaw*/
