@@ -13,4 +13,4 @@ sed -i "s/javac.target=1.3/javac.target=17/g" build.properties
 JDK_HOME=$JAVA_HOME ant jar
 
 mkdir -p ../lib
-mv lib/librocksaw.so lib/rocksaw-1.1.0.jar ../lib
+mv lib/* ../lib
