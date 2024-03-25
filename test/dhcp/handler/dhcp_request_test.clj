@@ -5,8 +5,10 @@
    [dhcp.components.handler]
    [dhcp.const.dhcp-type :refer [DHCPREQUEST DHCPACK DHCPNAK]]
    [dhcp.handler :as h]
+   [dhcp.handler.dhcp-request]
    [dhcp.records.config :as r.config]
    [dhcp.records.dhcp-message :as r.dhcp-message]
+   [dhcp.records.dhcp-packet :as r.packet]
    [dhcp.records.ip-address :as r.ip-address]
    [dhcp.test-helper :as th])
   (:import
@@ -17,7 +19,12 @@
    (java.time
     Instant)))
 
-(def sample-message (r.dhcp-message/map->DhcpMessage
+(def sample-packet (r.packet/->DhcpPacket
+                    (byte-array [])
+                    (byte-array [])
+                    (byte-array [])
+                    (Inet4Address/getByAddress (byte-array  [192 168 0 100]))
+                    (r.dhcp-message/map->DhcpMessage
                      {:op :BOOTREQUEST
                       :htype (byte 1)
                       :hlen (byte 6)
@@ -37,7 +44,7 @@
                                 {:code 54, :type :dhcp-server-id, :length 4, :value [192 168 0 100]}
                                 {:code 55, :type :parameter-list, :length 2, :value [3 1]}
                                 {:code 50, :type :requested-ip-address, :length 4, :value [192 168 0 100]}
-                                {:code 0, :type :pad, :length 0, :value [192 168 0 51]}]}))
+                                {:code 0, :type :pad, :length 0, :value [192 168 0 51]}]})))
 
 (def sample-subnet {:start-address (r.ip-address/str->ip-address "192.168.0.0")
                     :end-address (r.ip-address/str->ip-address "192.168.0.255")
@@ -57,7 +64,7 @@
             socket (proxy [DatagramSocket] []
                      (send [^DatagramPacket _packet]
                        (throw (ex-info "should not be called" {}))))]
-        (is (nil? (h/handler socket db (r.config/->Config nil) sample-message))))))
+        (is (nil? (h/handler socket db (r.config/->Config nil) sample-packet))))))
   (testing "request-in-selecting"
     (with-redefs [r.config/select-subnet (constantly sample-subnet)]
       (let [db (c.database/create-database "memory")]
@@ -66,23 +73,29 @@
                          (send [^DatagramPacket _packet]
                            (throw (ex-info "should not be called" {}))))]
             (testing "server id not match"
-              (let [message (update sample-message :options (fn [options]
-                                                              (map #(if (= (:code %) 54)
-                                                                      (assoc % :value [192 168 0 101])
-                                                                      %)
-                                                                   options)))]
+              (let [message (update-in sample-packet
+                                       [:message :options]
+                                       (fn [options]
+                                         (map #(if (= (:code %) 54)
+                                                 (assoc % :value [192 168 0 101])
+                                                 %)
+                                              options)))]
                 (is (nil? (h/handler socket db (r.config/->Config nil) message)))))
             (testing "requested id not in message"
-              (let [message (update sample-message :options (fn [options]
-                                                              (remove #(= (:code %) 50) options)))]
+              (let [message (update-in sample-packet
+                                       [:message :options]
+                                       (fn [options]
+                                         (remove #(= (:code %) 50) options)))]
                 (is (nil? (h/handler socket db (r.config/->Config nil) message)))))
             (testing "requested id not in subnet"
               ;; TODO: DHCPNAK?
-              (let [message (update sample-message :options (fn [options]
-                                                              (map #(if (= (:code %) 50)
-                                                                      (assoc % :value [192 167 255 255])
-                                                                      %)
-                                                                   options)))]
+              (let [message (update-in sample-packet
+                                       [:message :options]
+                                       (fn [options]
+                                         (map #(if (= (:code %) 50)
+                                                 (assoc % :value [192 167 255 255])
+                                                 %)
+                                              options)))]
                 (is (nil? (h/handler socket db (r.config/->Config nil) message)))))))
         (testing "offering record not found"
           (testing "no record"
@@ -91,7 +104,7 @@
                            (send [^DatagramPacket packet]
                              (reset! packet-to-send packet)))]
               (with-redefs [c.database/find-leases-by-hw-address (constantly [])]
-                (is (nil? (h/handler socket db (r.config/->Config nil) sample-message)))
+                (is (nil? (h/handler socket db (r.config/->Config nil) sample-packet)))
                 (is (= {:op :BOOTREPLY
                         :htype 1
                         :hlen 6
@@ -133,7 +146,7 @@
                                                                                :offered-at (Instant/now)
                                                                                :leased-at (Instant/now)
                                                                                :expired-at (.plusSeconds (Instant/now) 2)}])]
-                (is (nil? (h/handler socket db (r.config/->Config nil) sample-message)))
+                (is (nil? (h/handler socket db (r.config/->Config nil) sample-packet)))
                 (is (= {:op :BOOTREPLY
                         :htype 1
                         :hlen 6
@@ -166,7 +179,7 @@
                                                                                :offered-at (Instant/now)
                                                                                :leased-at (Instant/now)
                                                                                :expired-at (.minusSeconds (Instant/now) 86401)}])]
-                (is (nil? (h/handler socket db (r.config/->Config nil) sample-message)))
+                (is (nil? (h/handler socket db (r.config/->Config nil) sample-packet)))
                 (is (= {:op :BOOTREPLY
                         :htype 1
                         :hlen 6
@@ -203,7 +216,7 @@
                 mock-now (Instant/now)]
             (c.database/add-lease db lease)
             (with-redefs [dhcp.handler.dhcp-request/now (constantly mock-now)]
-              (is (nil? (h/handler socket db (r.config/->Config nil) sample-message)))
+              (is (nil? (h/handler socket db (r.config/->Config nil) sample-packet)))
               (is (= {:op :BOOTREPLY
                       :htype 1
                       :hlen 6

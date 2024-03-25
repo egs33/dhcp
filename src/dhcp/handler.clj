@@ -2,28 +2,29 @@
   (:require
    [clojure.tools.logging :as log]
    [dhcp.records.config]
-   [dhcp.records.dhcp-message :as r.dhcp-message])
+   [dhcp.records.dhcp-message :as r.dhcp-message]
+   [dhcp.records.dhcp-packet])
   (:import
+   (com.savarese.rocksaw.net
+    RawSocket)
    (dhcp.components.database
     IDatabase)
    (dhcp.records.config
     Config)
-   (dhcp.records.dhcp_message
-    DhcpMessage)
-   (java.net
-    DatagramSocket)))
+   (dhcp.records.dhcp_packet
+    DhcpPacket)))
 
 (defmulti handler
-  (fn [^DatagramSocket _
+  (fn [^RawSocket _
        ^IDatabase _
        ^Config _
-       ^DhcpMessage message]
+       ^DhcpPacket {:keys [:message]}]
     (r.dhcp-message/getType message)))
 
 (defmethod handler :default
-  [^DatagramSocket _
+  [^RawSocket _
    ^IDatabase _
    ^Config _
-   ^DhcpMessage message]
+   ^DhcpPacket {:keys [:message]}]
   (log/warnf "undefined message type:%s"
              (r.dhcp-message/getType message)))

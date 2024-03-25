@@ -11,12 +11,16 @@
    [dhcp.records.ip-address :as r.ip-address]
    [dhcp.util.bytes :as u.bytes])
   (:import
+   (com.savarese.rocksaw.net
+    RawSocket)
    (dhcp.components.database
     IDatabase)
    (dhcp.records.config
     Config)
    (dhcp.records.dhcp_message
     DhcpMessage)
+   (dhcp.records.dhcp_packet
+    DhcpPacket)
    (java.net
     DatagramSocket)
    (java.time
@@ -106,16 +110,17 @@
             (.send socket packet)))))))
 
 (defmethod h/handler DHCPREQUEST
-  [^DatagramSocket socket
+  [^RawSocket socket
    ^IDatabase db
    ^Config config
-   ^DhcpMessage message]
-  (log/debugf "DHCPDISCOVER %s" message)
-  (if-let [subnet (r.config/select-subnet config (:local-address message))]
-    (let [s-id (r.dhcp-message/get-option message 54)
+   ^DhcpPacket packet]
+  (log/debugf "DHCPDISCOVER %s" (:message packet))
+  (if-let [subnet (r.config/select-subnet config (:local-ip-address packet))]
+    (let [message (:message packet)
+          s-id (r.dhcp-message/get-option message 54)
           #_#_requested (r.dhcp-message/get-option message 50)
           #_#_l-addr (vec (.getAddress (:local-address message)))]
       (cond
         s-id
         (request-in-selecting socket db subnet message s-id)))
-    (log/infof "no subnet found for %s" (:local-address message))))
+    (log/infof "no subnet found for %s" (:local-ip-address packet))))

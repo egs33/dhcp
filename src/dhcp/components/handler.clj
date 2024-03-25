@@ -7,18 +7,18 @@
    [dhcp.handler.dhcp-request]
    [dhcp.records.config])
   (:import
+   (com.savarese.rocksaw.net
+    RawSocket)
    (dhcp.components.database
     IDatabase)
    (dhcp.records.config
     Config)
-   (dhcp.records.dhcp_message
-    DhcpMessage)
-   (java.net
-    DatagramSocket)))
+   (dhcp.records.dhcp_packet
+    DhcpPacket)))
 
 (defn make-handler [^IDatabase db ^Config config]
-  (fn [^DatagramSocket socket
-       ^DhcpMessage message]
+  (fn [^RawSocket socket
+       ^DhcpPacket message]
     (h/handler socket db config message)))
 
 (defrecord Handler [handler config db]

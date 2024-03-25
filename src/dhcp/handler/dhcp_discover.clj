@@ -11,14 +11,14 @@
    [dhcp.records.ip-address :as r.ip-address]
    [dhcp.util.bytes :as u.bytes])
   (:import
+   (com.savarese.rocksaw.net
+    RawSocket)
    (dhcp.components.database
     IDatabase)
    (dhcp.records.config
     Config)
-   (dhcp.records.dhcp_message
-    DhcpMessage)
-   (java.net
-    DatagramSocket)
+   (dhcp.records.dhcp_packet
+    DhcpPacket)
    (java.nio.charset
     Charset)
    (java.time
@@ -34,13 +34,14 @@
            US-ASCII))
 
 (defmethod h/handler DHCPDISCOVER
-  [^DatagramSocket socket
+  [^RawSocket socket
    ^IDatabase db
    ^Config config
-   ^DhcpMessage message]
-  (log/debugf "DHCPDISCOVER %s" message)
-  (if-let [subnet (r.config/select-subnet config (:local-address message))]
-    (let [requested-addr (some->> (r.dhcp-message/get-option message 50)
+   ^DhcpPacket packet]
+  (log/debugf "DHCPDISCOVER %s" (:message packet))
+  (if-let [subnet (r.config/select-subnet config (:local-ip-address packet))]
+    (let [message (:message packet)
+          requested-addr (some->> (r.dhcp-message/get-option message 50)
                                   byte-array)
           requested-addr (when (= (count requested-addr) 4)
                            requested-addr)
@@ -99,4 +100,4 @@
               packet (core.packet/create-datagram message reply)]
           (.send socket packet))
         (log/infof "no address for leasing in %s to %s" (:local-address message) (:chaddr message))))
-    (log/infof "no subnet found for %s" (:local-address message))))
+    (log/infof "no subnet found for %s" (:local-ip-address packet))))

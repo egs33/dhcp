@@ -7,6 +7,7 @@
    [dhcp.handler :as h]
    [dhcp.records.config :as r.config]
    [dhcp.records.dhcp-message :as r.dhcp-message]
+   [dhcp.records.dhcp-packet :as r.packet]
    [dhcp.records.ip-address :as r.ip-address]
    [dhcp.test-helper :as th])
   (:import
@@ -18,7 +19,12 @@
    (java.time
     Instant)))
 
-(def sample-message (r.dhcp-message/map->DhcpMessage
+(def sample-packet (r.packet/->DhcpPacket
+                    (byte-array [])
+                    (byte-array [])
+                    (byte-array [])
+                    (Inet4Address/getByAddress (byte-array  [192 168 0 100]))
+                    (r.dhcp-message/map->DhcpMessage
                      {:op :BOOTREQUEST
                       :htype (byte 1)
                       :hlen (byte 6)
@@ -36,7 +42,7 @@
                       :options [{:code 53, :type :dhcp-message-type, :length 1, :value [1]}
                                 {:code 61, :type :client-identifier, :length 7, :value [1 11 22 33 44 55 66]}
                                 {:code 55, :type :parameter-list, :length 2, :value [3 1]}
-                                {:code 0, :type :pad, :length 0, :value []}]}))
+                                {:code 0, :type :pad, :length 0, :value []}]})))
 
 (def sample-subnet {:start-address (r.ip-address/str->ip-address "192.168.0.0")
                     :end-address (r.ip-address/str->ip-address "192.168.0.255")
@@ -56,7 +62,7 @@
             socket (proxy [DatagramSocket] []
                      (send [^DatagramPacket _packet]
                        (throw (ex-info "should not be called" {}))))]
-        (is (nil? (h/handler socket db (r.config/->Config nil) sample-message))))))
+        (is (nil? (h/handler socket db (r.config/->Config nil) sample-packet))))))
   (testing "no available lease"
     (with-redefs [r.config/select-subnet (constantly sample-subnet)
                   core.lease/choose-ip-address (constantly nil)]
@@ -64,7 +70,7 @@
             socket (proxy [DatagramSocket] []
                      (send [^DatagramPacket _packet]
                        (throw (ex-info "should not be called" {}))))]
-        (is (nil? (h/handler socket db (r.config/->Config nil) sample-message))))))
+        (is (nil? (h/handler socket db (r.config/->Config nil) sample-packet))))))
   (testing "offer-new-lease"
     (with-redefs [r.config/select-subnet (constantly sample-subnet)
                   core.lease/choose-ip-address (constantly {:pool (first (:pools sample-subnet))
@@ -85,7 +91,7 @@
             socket (proxy [DatagramSocket] []
                      (send [^DatagramPacket packet]
                        (reset! packet-to-send packet)))]
-        (is (nil? (h/handler socket db (r.config/->Config nil) sample-message)))
+        (is (nil? (h/handler socket db (r.config/->Config nil) sample-packet)))
         (is (= [{:client-id (th/byte-vec [1 11 22 33 44 55 66])
                  :hw-address (th/byte-vec [11 22 33 44 55 66])
                  :ip-address (th/byte-vec [192 168 0 25])
