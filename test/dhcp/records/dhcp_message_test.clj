@@ -32,8 +32,7 @@
                                   (int (count data)))
           ip-addr (InetAddress/getByAddress ^bytes (byte-array [192 168 0 1]))]
       (is (= (r.dhcp-message/map->DhcpMessage
-              {:local-address ip-addr
-               :op :BOOTREQUEST
+              {:op :BOOTREQUEST
                :htype (byte 1)
                :hlen (byte 6)
                :hops (byte 0)
@@ -49,7 +48,7 @@
                :file ""
                :options [{:code 53, :type :dhcp-message-type, :length 1, :value [1]}
                          {:code 0, :type :pad, :length 0, :value []}]})
-             (r.dhcp-message/parse-message ip-addr packet)))))
+             (r.dhcp-message/parse-message packet)))))
   (testing "DHCPDISCOVER-with-overload"
     (let [data (concat [1 1 6 0
                         8 16 54 92
@@ -84,8 +83,7 @@
                                   (int (count data)))
           ip-addr (InetAddress/getByAddress ^bytes (byte-array [192 168 0 1]))]
       (is (= (r.dhcp-message/map->DhcpMessage
-              {:local-address ip-addr
-               :op :BOOTREQUEST
+              {:op :BOOTREQUEST
                :htype (byte 1)
                :hlen (byte 6)
                :hops (byte 0)
@@ -106,7 +104,7 @@
                          {:code 50, :type :requested-ip-address, :length 4, :value (vec (byte-array [192 168 0 10]))}
                          {:code 12, :type :hostname, :length 6, :value (vec (.getBytes "client"))}
                          {:code 55, :type :parameter-list, :length 6, :value [1 3 6 15 119 121]}]})
-             (r.dhcp-message/parse-message ip-addr packet))))))
+             (r.dhcp-message/parse-message packet))))))
 
 (deftest ->bytes-test
   (testing "DHCPDISCOVER"
@@ -128,8 +126,7 @@
       (is (= expected
              (map #(Byte/toUnsignedInt %)
                   (r.dhcp-message/->bytes (r.dhcp-message/map->DhcpMessage
-                                           {:local-address nil
-                                            :op :BOOTREQUEST
+                                           {:op :BOOTREQUEST
                                             :htype (byte 1)
                                             :hlen (byte 6)
                                             :hops (byte 0)
@@ -151,8 +148,7 @@
 
 (deftest get-option-test
   (let [message (r.dhcp-message/map->DhcpMessage
-                 {:local-address nil
-                  :op :BOOTREQUEST
+                 {:op :BOOTREQUEST
                   :htype (byte 1)
                   :hlen (byte 6)
                   :hops (byte 0)

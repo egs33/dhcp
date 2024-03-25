@@ -19,8 +19,7 @@
     Instant)))
 
 (def sample-message (r.dhcp-message/map->DhcpMessage
-                     {:local-address (Inet4Address/getByAddress (byte-array [192 168 0 100]))
-                      :op :BOOTREQUEST
+                     {:op :BOOTREQUEST
                       :htype (byte 1)
                       :hlen (byte 6)
                       :hops (byte 0)
@@ -123,6 +122,4 @@
                              {:code 1, :length 4, :type :subnet-mask, :value [-1 -1 -1 0]}
                              {:code 255, :length 0, :type :end, :value []}]
                    :sname ""}
-                  (-> (r.dhcp-message/parse-message (Inet4Address/getByAddress (byte-array [192 168 0 100]))
-                                                    @packet-to-send)
-                      (dissoc :local-address)))))))))
+                  (r.dhcp-message/parse-message @packet-to-send))))))))

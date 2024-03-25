@@ -46,8 +46,7 @@
         (if (empty? leases)
           (let [_ (log/debug "DHCPREQUEST received, but no lease found")
                 reply (r.dhcp-message/map->DhcpMessage
-                       {:local-address nil
-                        :op :BOOTREPLY
+                       {:op :BOOTREPLY
                         :htype (:htype message)
                         :hlen (:hlen message)
                         :hops (byte 0)
@@ -88,8 +87,7 @@
                                 requested-params
                                 [{:code 255, :type :end, :length 0, :value []}])
                 reply (r.dhcp-message/map->DhcpMessage
-                       {:local-address nil
-                        :op :BOOTREPLY
+                       {:op :BOOTREPLY
                         :htype (:htype message)
                         :hlen (:hlen message)
                         :hops (byte 0)

@@ -18,8 +18,7 @@
     Instant)))
 
 (def sample-message (r.dhcp-message/map->DhcpMessage
-                     {:local-address (Inet4Address/getByAddress (byte-array [192 168 0 100]))
-                      :op :BOOTREQUEST
+                     {:op :BOOTREQUEST
                       :htype (byte 1)
                       :hlen (byte 6)
                       :hops (byte 0)
@@ -110,9 +109,7 @@
                                   {:code 54, :type :dhcp-server-id
                                    :length 4, :value (th/byte-vec [192 168 0 100])}]
                         :sname ""}
-                       (-> (r.dhcp-message/parse-message (Inet4Address/getByAddress (byte-array [192 168 0 100]))
-                                                         @packet-to-send)
-                           (dissoc :local-address)))))))
+                       (r.dhcp-message/parse-message @packet-to-send))))))
           (testing "other address only"
             (let [packet-to-send (atom nil)
                   socket (proxy [DatagramSocket] []
@@ -154,9 +151,7 @@
                                   {:code 54, :type :dhcp-server-id
                                    :length 4, :value (th/byte-vec [192 168 0 100])}]
                         :sname ""}
-                       (-> (r.dhcp-message/parse-message (Inet4Address/getByAddress (byte-array [192 168 0 100]))
-                                                         @packet-to-send)
-                           (dissoc :local-address)))))))
+                       (r.dhcp-message/parse-message @packet-to-send))))))
           (testing "lease record expired"
             (let [packet-to-send (atom nil)
                   socket (proxy [DatagramSocket] []
@@ -189,9 +184,7 @@
                                   {:code 54, :type :dhcp-server-id
                                    :length 4, :value (th/byte-vec [192 168 0 100])}]
                         :sname ""}
-                       (-> (r.dhcp-message/parse-message (Inet4Address/getByAddress (byte-array [192 168 0 100]))
-                                                         @packet-to-send)
-                           (dissoc :local-address))))))))
+                       (r.dhcp-message/parse-message @packet-to-send)))))))
         (testing "send DHCPACK and update lease"
           (let [db (c.database/create-database "memory")
                 packet-to-send (atom nil)
@@ -235,9 +228,7 @@
                                  :length 4, :value (th/byte-vec [255 255 255 0])}
                                 {:code 255, :type :end, :length 0, :value []}]
                       :sname ""}
-                     (-> (r.dhcp-message/parse-message (Inet4Address/getByAddress (byte-array [192 168 0 100]))
-                                                       @packet-to-send)
-                         (dissoc :local-address))))
+                     (r.dhcp-message/parse-message @packet-to-send)))
               (is (= [(assoc (th/array->vec-recursively lease)
                              :status "lease"
                              :leased-at mock-now
