@@ -11,8 +11,7 @@
    (dhcp.records.ip_address
     IpAddress)
    (java.net
-    DatagramPacket
-    Inet4Address)
+    DatagramPacket)
    (java.nio.charset
     Charset)
    (java.util
@@ -38,8 +37,7 @@
             (take len)))
      (concat (.getBytes s US-ASCII) [0]))))
 
-(defrecord DhcpMessage [^Inet4Address local-address
-                        ^Keyword op
+(defrecord DhcpMessage [^Keyword op
                         ^byte htype
                         ^byte hlen
                         ^byte hops
@@ -100,8 +98,7 @@
              US-ASCII)))
 
 (defn parse-message
-  ^DhcpMessage [^Inet4Address local-address
-                ^DatagramPacket datagram]
+  ^DhcpMessage [^DatagramPacket datagram]
   (let [data (.getData datagram)
         op (case (first data)
              1 :BOOTREQUEST
@@ -143,8 +140,7 @@
                           (->> (option/parse-options file-bytes)
                                (take-while #(not= (:code %) 255))))]
     (map->DhcpMessage
-     {:local-address local-address
-      :op op
+     {:op op
       :htype htype
       :hlen hlen
       :hops hops
