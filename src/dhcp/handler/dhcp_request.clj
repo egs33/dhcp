@@ -17,8 +17,6 @@
     IDatabase)
    (dhcp.records.config
     Config)
-   (dhcp.records.dhcp_message
-    DhcpMessage)
    (dhcp.records.dhcp_packet
     DhcpPacket)
    (java.time
@@ -30,12 +28,13 @@
   [^RawSocket socket
    ^IDatabase db
    subnet
-   ^DhcpMessage message
+   ^DhcpPacket packet
    s-id]
-  (let [requested (some-> (r.dhcp-message/get-option message 50)
+  (let [message (:message packet)
+        requested (some-> (r.dhcp-message/get-option message 50)
                           byte-array
                           u.bytes/bytes->number)
-        l-addr (.getAddress (:local-address message))]
+        l-addr (.getAddress (:local-ip-address packet))]
     (if (or (not (u.bytes/equal? (byte-array s-id) l-addr))
             (nil? requested)
             (not (<= (r.ip-address/->int (:start-address subnet))
@@ -63,7 +62,7 @@
                         :sname ""
                         :file ""
                         :options [{:code 53, :type :dhcp-message-type, :length 1, :value [DHCPNAK]}
-                                  {:code 54, :type :server-identifier
+                                  {:code 54, :type :dhcp-server-id
                                    :length 4, :value (vec l-addr)}]})]
             (core.packet/send-packet socket message reply))
           (let [req-ip-bytes (byte-array (u.bytes/number->byte-coll requested 4))
@@ -83,8 +82,9 @@
                 options (concat [{:code 53, :type :dhcp-message-type, :length 1, :value [DHCPACK]}
                                  {:code 51, :type :address-time
                                   :length 4, :value (u.bytes/number->byte-coll (:lease-time pool) 4)}
-                                 {:code 54, :type :server-identifier
-                                  :length 4, :value (vec (.getAddress (:local-address message)))}]
+                                 {:code 54, :type :dhcp-server-id
+                                  :length 4, :value (->> (.getAddress (:local-ip-address packet))
+                                                         (map #(Byte/toUnsignedInt %)))}]
                                 requested-params
                                 [{:code 255, :type :end, :length 0, :value []}])
                 reply (r.dhcp-message/map->DhcpMessage
@@ -118,5 +118,5 @@
           #_#_l-addr (vec (.getAddress (:local-address message)))]
       (cond
         s-id
-        (request-in-selecting socket db subnet message s-id)))
+        (request-in-selecting socket db subnet packet s-id)))
     (log/infof "no subnet found for %s" (:local-ip-address packet))))
