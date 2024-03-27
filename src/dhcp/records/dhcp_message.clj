@@ -1,6 +1,5 @@
 (ns dhcp.records.dhcp-message
   (:require
-   [clojure.pprint]
    [clojure.tools.logging :as log]
    [dhcp.core.option :as option]
    [dhcp.records.ip-address :as r.ip-address]

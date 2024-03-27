@@ -100,7 +100,6 @@
                                 (try
                                   (let [buf (byte-array 2048)
                                         len (.read socket buf)]
-                                    (clojure.pprint/pprint {:len len})
                                     (Arrays/copyOfRange buf 0 len))
                                   (catch SocketException e
                                     (log/infof "socket exception %s" e))
