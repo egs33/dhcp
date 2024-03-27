@@ -1,4 +1,9 @@
-(ns dhcp.test-helper)
+(ns dhcp.test-helper
+  (:import
+   (com.savarese.rocksaw.net
+    RawSocket)
+   (java.net
+    InetAddress)))
 
 (defn array->vec-recursively
   "Converts all arrays in a map to vectors for comparison"
@@ -19,3 +24,8 @@
 (defn byte-vec
   [^bytes numbers]
   (vec (byte-array numbers)))
+
+(def socket-mock
+  (proxy [RawSocket] []
+    (write [^InetAddress _address ^bytes _data]
+      (throw (ex-info "should not be called" {})))))

@@ -4,6 +4,7 @@
    [dhcp.components.database :as c.database]
    [dhcp.components.handler]
    [dhcp.core.lease :as core.lease]
+   [dhcp.core.packet :as core.packet]
    [dhcp.handler :as h]
    [dhcp.records.config :as r.config]
    [dhcp.records.dhcp-message :as r.dhcp-message]
@@ -58,19 +59,13 @@
 (deftest handler-dhcp-discover-test
   (testing "no subnet definition"
     (with-redefs [r.config/select-subnet (constantly nil)]
-      (let [db (c.database/create-database "memory")
-            socket (proxy [DatagramSocket] []
-                     (send [^DatagramPacket _packet]
-                       (throw (ex-info "should not be called" {}))))]
-        (is (nil? (h/handler socket db (r.config/->Config nil) sample-packet))))))
+      (let [db (c.database/create-database "memory")]
+        (is (nil? (h/handler th/socket-mock db (r.config/->Config nil) sample-packet))))))
   (testing "no available lease"
     (with-redefs [r.config/select-subnet (constantly sample-subnet)
                   core.lease/choose-ip-address (constantly nil)]
-      (let [db (c.database/create-database "memory")
-            socket (proxy [DatagramSocket] []
-                     (send [^DatagramPacket _packet]
-                       (throw (ex-info "should not be called" {}))))]
-        (is (nil? (h/handler socket db (r.config/->Config nil) sample-packet))))))
+      (let [db (c.database/create-database "memory")]
+        (is (nil? (h/handler th/socket-mock db (r.config/->Config nil) sample-packet))))))
   (testing "offer-new-lease"
     (with-redefs [r.config/select-subnet (constantly sample-subnet)
                   core.lease/choose-ip-address (constantly {:pool (first (:pools sample-subnet))
@@ -87,11 +82,10 @@
                                         :offered-at (Instant/now)
                                         :leased-at (Instant/now)
                                         :expired-at (Instant/now)})
-            packet-to-send (atom nil)
-            socket (proxy [DatagramSocket] []
-                     (send [^DatagramPacket packet]
-                       (reset! packet-to-send packet)))]
-        (is (nil? (h/handler socket db (r.config/->Config nil) sample-packet)))
+            packet-to-send (atom nil)]
+        (is (nil?
+             (with-redefs [core.packet/send-packet (fn [_ _ reply] (reset! packet-to-send reply))]
+               (h/handler th/socket-mock db (r.config/->Config nil) sample-packet))))
         (is (= [{:client-id (th/byte-vec [1 11 22 33 44 55 66])
                  :hw-address (th/byte-vec [11 22 33 44 55 66])
                  :ip-address (th/byte-vec [192 168 0 25])
@@ -101,31 +95,24 @@
                  :leased-at nil}]
                (th/array->vec-recursively (map #(dissoc % :offered-at :expired-at)
                                                (c.database/get-all-leases db)))))
-        (let [^InetSocketAddress socket (.getSocketAddress ^DatagramPacket @packet-to-send)]
-          (is (= (th/byte-vec [255 255 255 255])
-                 (-> (.getAddress socket)
-                     (.getAddress)
-                     vec)))
-          (is (= 68
-                 (.getPort socket)))
-          (is (=  {:op :BOOTREPLY
-                   :htype 1
-                   :hlen 6
-                   :hops 0
-                   :xid 135280220
-                   :secs 0
-                   :flags 0x80
-                   :ciaddr (r.ip-address/->IpAddress 0)
-                   :yiaddr (r.ip-address/str->ip-address "192.168.0.25")
-                   :giaddr (r.ip-address/->IpAddress 0)
-                   :siaddr (r.ip-address/->IpAddress 0)
-                   :chaddr [11 22 33 44 55 66]
-                   :file ""
-                   :options [{:code 53, :length 1, :type :dhcp-message-type, :value [2]}
-                             {:code 51, :length 4, :type :address-time, :value [0 0 14 16]}
-                             {:code 54, :length 4, :type :dhcp-server-id, :value [-64 -88 0 100]}
-                             {:code 3, :length 4, :type :router, :value [-64 -88 0 1]}
-                             {:code 1, :length 4, :type :subnet-mask, :value [-1 -1 -1 0]}
-                             {:code 255, :length 0, :type :end, :value []}]
-                   :sname ""}
-                  (r.dhcp-message/parse-message @packet-to-send))))))))
+        (is (= {:op :BOOTREPLY
+                :htype 1
+                :hlen 6
+                :hops 0
+                :xid 135280220
+                :secs 0
+                :flags 0x80
+                :ciaddr (r.ip-address/->IpAddress 0)
+                :yiaddr (r.ip-address/str->ip-address "192.168.0.25")
+                :giaddr (r.ip-address/->IpAddress 0)
+                :siaddr (r.ip-address/->IpAddress 0)
+                :chaddr [11 22 33 44 55 66]
+                :file ""
+                :options [{:code 53, :length 1, :type :dhcp-message-type, :value [2]}
+                          {:code 51, :length 4, :type :address-time, :value [0 0 14 16]}
+                          {:code 54, :length 4, :type :dhcp-server-id, :value [-64 -88 0 100]}
+                          {:code 3, :length 4, :type :router, :value [-64 -88 0 1]}
+                          {:code 1, :length 4, :type :subnet-mask, :value [-1 -1 -1 0]}
+                          {:code 255, :length 0, :type :end, :value []}]
+                :sname ""}
+               @packet-to-send))))))
