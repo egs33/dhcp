@@ -47,8 +47,8 @@
                      ^InetSocketAddress address)))
 
 (defn send-packet
-  [^RawSocket socket
-   ^DhcpMessage request
-   ^DhcpMessage reply]
+  [^RawSocket _socket
+   ^DhcpMessage _request
+   ^DhcpMessage _reply]
   ;; TODO
   )
