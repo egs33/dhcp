@@ -21,15 +21,13 @@
     DhcpMessage)
    (dhcp.records.dhcp_packet
     DhcpPacket)
-   (java.net
-    DatagramSocket)
    (java.time
     Instant)))
 
 (defn- now [] (Instant/now))
 
 (defn- request-in-selecting
-  [^DatagramSocket socket
+  [^RawSocket socket
    ^IDatabase db
    subnet
    ^DhcpMessage message
@@ -66,9 +64,8 @@
                         :file ""
                         :options [{:code 53, :type :dhcp-message-type, :length 1, :value [DHCPNAK]}
                                   {:code 54, :type :server-identifier
-                                   :length 4, :value (vec l-addr)}]})
-                packet (core.packet/create-datagram message reply)]
-            (.send socket packet))
+                                   :length 4, :value (vec l-addr)}]})]
+            (core.packet/send-packet socket message reply))
           (let [req-ip-bytes (byte-array (u.bytes/number->byte-coll requested 4))
                 pool (core.lease/select-pool-by-ip-address subnet req-ip-bytes)
                 _ (c.database/update-lease db
@@ -105,9 +102,8 @@
                         :chaddr (:chaddr message)
                         :sname ""
                         :file ""
-                        :options options})
-                packet (core.packet/create-datagram message reply)]
-            (.send socket packet)))))))
+                        :options options})]
+            (core.packet/send-packet socket message reply)))))))
 
 (defmethod h/handler DHCPREQUEST
   [^RawSocket socket

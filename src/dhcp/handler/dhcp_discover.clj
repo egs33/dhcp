@@ -96,8 +96,7 @@
                       :chaddr (:chaddr message)
                       :sname ""
                       :file ""
-                      :options options})
-              packet (core.packet/create-datagram message reply)]
-          (.send socket packet))
+                      :options options})]
+          (core.packet/send-packet socket message reply))
         (log/infof "no address for leasing in %s to %s" (:local-address message) (:chaddr message))))
     (log/infof "no subnet found for %s" (:local-ip-address packet))))

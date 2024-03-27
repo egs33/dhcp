@@ -4,6 +4,8 @@
    [dhcp.records.dhcp-message :as r.dhcp-message]
    [dhcp.records.ip-address :as r.ip-address])
   (:import
+   (com.savarese.rocksaw.net
+    RawSocket)
    (dhcp.records.dhcp_message
     DhcpMessage)
    (java.net
@@ -43,3 +45,10 @@
     (DatagramPacket. data
                      (int (count data))
                      ^InetSocketAddress address)))
+
+(defn send-packet
+  [^RawSocket socket
+   ^DhcpMessage request
+   ^DhcpMessage reply]
+  ;; TODO
+  )
