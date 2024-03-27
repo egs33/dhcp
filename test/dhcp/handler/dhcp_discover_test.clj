@@ -13,10 +13,7 @@
    [dhcp.test-helper :as th])
   (:import
    (java.net
-    DatagramPacket
-    DatagramSocket
-    Inet4Address
-    InetSocketAddress)
+    Inet4Address)
    (java.time
     Instant)))
 
@@ -24,7 +21,7 @@
                     (byte-array [])
                     (byte-array [])
                     (byte-array [])
-                    (Inet4Address/getByAddress (byte-array  [192 168 0 100]))
+                    (Inet4Address/getByAddress (byte-array [192 168 0 100]))
                     (r.dhcp-message/map->DhcpMessage
                      {:op :BOOTREQUEST
                       :htype (byte 1)
@@ -58,17 +55,24 @@
 
 (deftest handler-dhcp-discover-test
   (testing "no subnet definition"
-    (with-redefs [r.config/select-subnet (constantly nil)]
-      (let [db (c.database/create-database "memory")]
-        (is (nil? (h/handler th/socket-mock db (r.config/->Config nil) sample-packet))))))
+    (let [db (c.database/create-database "memory")]
+      (is (nil? (h/handler th/socket-mock
+                           db
+                           (reify
+                             r.config/IConfig
+                             (select-subnet [_ _] nil))
+                           sample-packet)))))
   (testing "no available lease"
-    (with-redefs [r.config/select-subnet (constantly sample-subnet)
-                  core.lease/choose-ip-address (constantly nil)]
+    (with-redefs [core.lease/choose-ip-address (constantly nil)]
       (let [db (c.database/create-database "memory")]
-        (is (nil? (h/handler th/socket-mock db (r.config/->Config nil) sample-packet))))))
+        (is (nil? (h/handler th/socket-mock
+                             db
+                             (reify
+                               r.config/IConfig
+                               (select-subnet [_ _] sample-subnet))
+                             sample-packet))))))
   (testing "offer-new-lease"
-    (with-redefs [r.config/select-subnet (constantly sample-subnet)
-                  core.lease/choose-ip-address (constantly {:pool (first (:pools sample-subnet))
+    (with-redefs [core.lease/choose-ip-address (constantly {:pool (first (:pools sample-subnet))
                                                             :ip-address (byte-array [192 168 0 25])
                                                             :status :new
                                                             :lease-time 3600})]
@@ -84,8 +88,13 @@
                                         :expired-at (Instant/now)})
             packet-to-send (atom nil)]
         (is (nil?
-             (with-redefs [core.packet/send-packet (fn [_ _ reply] (reset! packet-to-send reply))]
-               (h/handler th/socket-mock db (r.config/->Config nil) sample-packet))))
+             (with-redefs [core.packet/send-packet (fn [_ _ reply] (reset! packet-to-send reply) nil)]
+               (h/handler th/socket-mock
+                          db
+                          (reify
+                            r.config/IConfig
+                            (select-subnet [_ _] sample-subnet))
+                          sample-packet))))
         (is (= [{:client-id (th/byte-vec [1 11 22 33 44 55 66])
                  :hw-address (th/byte-vec [11 22 33 44 55 66])
                  :ip-address (th/byte-vec [192 168 0 25])
@@ -95,24 +104,24 @@
                  :leased-at nil}]
                (th/array->vec-recursively (map #(dissoc % :offered-at :expired-at)
                                                (c.database/get-all-leases db)))))
-        (is (= {:op :BOOTREPLY
-                :htype 1
-                :hlen 6
-                :hops 0
-                :xid 135280220
-                :secs 0
-                :flags 0x80
-                :ciaddr (r.ip-address/->IpAddress 0)
-                :yiaddr (r.ip-address/str->ip-address "192.168.0.25")
-                :giaddr (r.ip-address/->IpAddress 0)
-                :siaddr (r.ip-address/->IpAddress 0)
-                :chaddr [11 22 33 44 55 66]
-                :file ""
-                :options [{:code 53, :length 1, :type :dhcp-message-type, :value [2]}
-                          {:code 51, :length 4, :type :address-time, :value [0 0 14 16]}
-                          {:code 54, :length 4, :type :dhcp-server-id, :value [-64 -88 0 100]}
-                          {:code 3, :length 4, :type :router, :value [-64 -88 0 1]}
-                          {:code 1, :length 4, :type :subnet-mask, :value [-1 -1 -1 0]}
-                          {:code 255, :length 0, :type :end, :value []}]
-                :sname ""}
+        (is (= (r.dhcp-message/map->DhcpMessage {:op :BOOTREPLY
+                                                 :htype (byte 1)
+                                                 :hlen (byte 6)
+                                                 :hops (byte 0)
+                                                 :xid 135280220
+                                                 :secs 0
+                                                 :flags 0x80
+                                                 :ciaddr (r.ip-address/->IpAddress 0)
+                                                 :yiaddr (r.ip-address/str->ip-address "192.168.0.25")
+                                                 :giaddr (r.ip-address/->IpAddress 0)
+                                                 :siaddr (r.ip-address/->IpAddress 0)
+                                                 :chaddr [11 22 33 44 55 66]
+                                                 :file ""
+                                                 :options [{:code 53, :length 1, :type :dhcp-message-type, :value [2]}
+                                                           {:code 51, :length 4, :type :address-time, :value [0 0 14 16]}
+                                                           {:code 54, :length 4, :type :dhcp-server-id, :value [192 168 0 100]}
+                                                           {:code 3, :length 4, :type :router, :value [192 168 0 1]}
+                                                           {:code 1, :length 4, :type :subnet-mask, :value [255 255 255 0]}
+                                                           {:code 255, :length 0, :type :end, :value []}]
+                                                 :sname ""})
                @packet-to-send))))))

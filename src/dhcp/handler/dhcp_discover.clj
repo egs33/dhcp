@@ -75,12 +75,13 @@
                                     distinct
                                     (keep #(get options-by-code %)))
               options (concat [{:code 53, :type :dhcp-message-type, :length 1, :value [DHCPOFFER]}
-                               {:code 51, :type :ip-address-lease-time
+                               {:code 51, :type :address-time
                                 :length 4, :value (u.bytes/number->byte-coll lease-time 4)}
-                               {:code 54, :type :server-identifier
-                                :length 4, :value (vec (.getAddress (:local-address message)))}]
+                               {:code 54, :type :dhcp-server-id
+                                :length 4, :value (->> (.getAddress (:local-ip-address packet))
+                                                       (map #(Byte/toUnsignedInt %)))}]
                               requested-params
-                              [{:code 255, :type :end, :length 1, :value []}])
+                              [{:code 255, :type :end, :length 0, :value []}])
               reply (r.dhcp-message/map->DhcpMessage
                      {:op :BOOTREPLY
                       :htype (:htype message)
