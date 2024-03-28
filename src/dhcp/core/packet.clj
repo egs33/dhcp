@@ -1,8 +1,10 @@
 (ns dhcp.core.packet
   (:require
+   [dhcp.components.udp-server :refer [UDP-SERVER-PORT]]
    [dhcp.const.dhcp-type :refer [DHCPNAK DHCPOFFER DHCPACK]]
    [dhcp.records.dhcp-message :as r.dhcp-message]
-   [dhcp.records.ip-address :as r.ip-address])
+   [dhcp.records.ip-address :as r.ip-address]
+   [dhcp.util.bytes :as u.bytes])
   (:import
    (com.savarese.rocksaw.net
     RawSocket)
@@ -10,13 +12,56 @@
     DhcpMessage)
    (java.net
     DatagramPacket
+    Inet4Address
     InetAddress
     InetSocketAddress)))
+
+(defn- sum-ones-complement-by-16bits
+  [data]
+  (let [to-pos (fn [num]
+                 (if (instance? Byte num)
+                   (Byte/toUnsignedInt num)
+                   num))
+        sum (->> (partition-all 2 data)
+                 vec
+                 (map (fn [[b1 b2]]
+                        (->> (+ (* 0x100 (to-pos b1))
+                                (if b2
+                                  (to-pos b2)
+                                  0))
+                             (- 0xffff))))
+                 (reduce + 0))
+        overflow (int (/ sum 0x10000))]
+    (mod (+ sum overflow) 0x10000)))
+
+(defn- create-udp-datagram
+  [^Inet4Address source
+   ^Inet4Address dest
+   dest-port
+   ^bytes payload]
+  (let [tentative-datagram (concat (u.bytes/number->byte-coll UDP-SERVER-PORT 2)
+                                   (u.bytes/number->byte-coll dest-port 2)
+                                   (u.bytes/number->byte-coll (+ (count payload) 8) 2)
+                                   (u.bytes/number->byte-coll 0 2)                          ; checksum
+                                   payload)
+        pseudo-ip-header (concat (.getAddress source)
+                                 (.getAddress dest)
+                                 [(byte 0) (byte 17)]
+                                 (u.bytes/number->byte-coll (+ (count payload) 8) 2))
+        checksum (-> (sum-ones-complement-by-16bits (concat pseudo-ip-header tentative-datagram))
+                     (u.bytes/number->byte-coll 2))]
+    (-> (vec tentative-datagram)
+        (assoc 6 (nth checksum 0)
+               7 (nth checksum 1)))))
 
 (defn create-datagram ^DatagramPacket [^DhcpMessage request
                                        ^DhcpMessage reply]
   (let [^bytes data (r.dhcp-message/->bytes reply)
         message-type (first (r.dhcp-message/get-option reply 53))
+        _ (create-udp-datagram (InetAddress/getByAddress (r.ip-address/->bytes (:giaddr request)))
+                               (InetAddress/getByAddress (r.ip-address/->bytes (:ciaddr request)))
+                               68
+                               data)
         address (cond
                   (not= (r.ip-address/->int (:giaddr request)) 0)
                   (InetSocketAddress. (InetAddress/getByAddress (r.ip-address/->bytes (:giaddr request)))
