@@ -34,6 +34,37 @@
         overflow (int (/ sum 0x10000))]
     (mod (+ sum overflow) 0x10000)))
 
+(defn- create-ethernet-frame
+  [^bytes dest-hw
+   ^bytes source-hw
+   ^bytes payload]
+  (concat dest-hw
+          source-hw
+          (u.bytes/number->byte-coll 0x0800 2)  ; type
+          payload))
+
+(defn- create-ip-packet
+  [^Inet4Address source
+   ^Inet4Address dest
+   payload]
+  (let [header (concat (u.bytes/number->byte-coll 0x45 1)                      ; version and IHL
+                       (u.bytes/number->byte-coll 0 1)                         ; TOS
+                       (u.bytes/number->byte-coll (+ (count payload) 20) 2)    ; total length
+                       (u.bytes/number->byte-coll 0 2)                         ; identification
+                       (u.bytes/number->byte-coll 0 2)                         ; flags and fragment offset
+                       (u.bytes/number->byte-coll 0x3a 1)                      ; TTL
+                       (u.bytes/number->byte-coll 17 1)                        ; protocol (UDP)
+                       (u.bytes/number->byte-coll 0 2)                         ; checksum
+                       (.getAddress source)                                    ; source IP
+                       (.getAddress dest)                                      ; destination IP
+                       )
+        checksum (-> (sum-ones-complement-by-16bits header)
+                     (u.bytes/number->byte-coll 2))]
+    (-> (concat header payload)
+        vec
+        (assoc 10 (nth checksum 0)
+               11 (nth checksum 1)))))
+
 (defn- create-udp-datagram
   [^Inet4Address source
    ^Inet4Address dest
