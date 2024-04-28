@@ -22,6 +22,7 @@
                     (byte-array [])
                     (byte-array [])
                     (Inet4Address/getByAddress (byte-array [192 168 0 100]))
+                    true
                     (r.dhcp-message/map->DhcpMessage
                      {:op :BOOTREQUEST
                       :htype (byte 1)

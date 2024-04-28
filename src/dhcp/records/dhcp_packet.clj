@@ -11,4 +11,5 @@
                        ^bytes destination-hw-address
                        ^bytes remote-hw-address
                        ^Inet4Address local-ip-address
+                       ^Boolean is-broadcast
                        ^DhcpMessage message])

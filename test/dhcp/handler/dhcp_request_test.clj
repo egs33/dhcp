@@ -23,6 +23,7 @@
                     (byte-array [])
                     (byte-array [])
                     (Inet4Address/getByAddress (byte-array  [192 168 0 100]))
+                    true
                     (r.dhcp-message/map->DhcpMessage
                      {:op :BOOTREQUEST
                       :htype (byte 1)
@@ -43,7 +44,7 @@
                                 {:code 54, :type :dhcp-server-id, :length 4, :value [192 168 0 100]}
                                 {:code 55, :type :parameter-list, :length 2, :value [3 1]}
                                 {:code 50, :type :requested-ip-address, :length 4, :value [192 168 0 100]}
-                                {:code 0, :type :pad, :length 0, :value [192 168 0 51]}]})))
+                                {:code 0, :type :pad, :length 0, :value []}]})))
 
 (def sample-subnet {:start-address (r.ip-address/str->ip-address "192.168.0.0")
                     :end-address (r.ip-address/str->ip-address "192.168.0.255")

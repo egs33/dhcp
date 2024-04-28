@@ -119,6 +119,8 @@
                                                                (:destination-mac parsed)
                                                                (:source-mac parsed)
                                                                ip-address
+                                                               (= (r.ip-address/->bytes (get-in parsed [:ip-payload :destination-ip]))
+                                                                  [255 255 255 255])
                                                                message)]
                         (handler @socket-atom dhcp-packet))
                       (catch ExceptionInfo e
