@@ -3,6 +3,7 @@
    [dhcp.components.udp-server :refer [UDP-SERVER-PORT]]
    [dhcp.const.dhcp-type :refer [DHCPNAK DHCPOFFER DHCPACK]]
    [dhcp.records.dhcp-message :as r.dhcp-message]
+   [dhcp.records.dhcp-packet]
    [dhcp.records.ip-address :as r.ip-address]
    [dhcp.util.bytes :as u.bytes])
   (:import
@@ -10,11 +11,11 @@
     RawSocket)
    (dhcp.records.dhcp_message
     DhcpMessage)
+   (dhcp.records.dhcp_packet
+    DhcpPacket)
    (java.net
-    DatagramPacket
     Inet4Address
-    InetAddress
-    InetSocketAddress)))
+    InetAddress)))
 
 (defn- sum-ones-complement-by-16bits
   [data]
@@ -35,8 +36,8 @@
     (mod (+ sum overflow) 0x10000)))
 
 (defn- create-ethernet-frame
-  [^bytes dest-hw
-   ^bytes source-hw
+  [^bytes source-hw
+   ^bytes dest-hw
    ^bytes payload]
   (concat dest-hw
           source-hw
@@ -85,46 +86,52 @@
         (assoc 6 (nth checksum 0)
                7 (nth checksum 1)))))
 
-(defn create-datagram ^DatagramPacket [^DhcpMessage request
-                                       ^DhcpMessage reply]
+(defn- get-packet-info [^DhcpPacket request
+                        ^DhcpMessage reply]
+  (let [request-message (:message request)
+        message-type (first (r.dhcp-message/get-option reply 53))]
+    (cond
+      (not= (r.ip-address/->int (:giaddr request-message)) 0)
+      {:dest-ip-addr (InetAddress/getByAddress (r.ip-address/->bytes (:giaddr request-message)))
+       :dest-mac-addr (:remote-hw-address request)
+       :dest-port 67}
+
+      (= message-type DHCPNAK)
+      {:dest-ip-addr (InetAddress/getByAddress (byte-array [255 255 255 255]))
+       :dest-mac-addr (byte-array [255 255 255 255 255 255])
+       :dest-port 68}
+
+      (and (not= (r.ip-address/->int (:ciaddr request-message)) 0)
+           (#{DHCPOFFER DHCPACK} message-type))
+      {:dest-ip-addr (InetAddress/getByAddress (r.ip-address/->bytes (:ciaddr request-message)))
+       :dest-mac-addr (:remote-hw-address request)
+       :dest-port 68}
+
+      (and (not (zero? (bit-and 0x80 (:flags request-message))))
+           (#{DHCPOFFER DHCPACK} message-type))
+      {:dest-ip-addr (InetAddress/getByAddress (byte-array [255 255 255 255]))
+       :dest-mac-addr (byte-array [255 255 255 255 255 255])
+       :dest-port 68}
+
+      :else
+      {:dest-ip-addr (InetAddress/getByAddress (r.ip-address/->bytes (:yiaddr request-message)))
+       :dest-mac-addr (:remote-hw-address request)
+       :dest-port 68})))
+
+(defn- create-datagram [^DhcpPacket request
+                        ^DhcpMessage reply]
   (let [^bytes data (r.dhcp-message/->bytes reply)
-        message-type (first (r.dhcp-message/get-option reply 53))
-        _ (create-udp-datagram (InetAddress/getByAddress (r.ip-address/->bytes (:giaddr request)))
-                               (InetAddress/getByAddress (r.ip-address/->bytes (:ciaddr request)))
-                               68
-                               data)
-        address (cond
-                  (not= (r.ip-address/->int (:giaddr request)) 0)
-                  (InetSocketAddress. (InetAddress/getByAddress (r.ip-address/->bytes (:giaddr request)))
-                                      67)
-
-                  (= message-type DHCPNAK)
-                  (InetSocketAddress. (InetAddress/getByAddress (byte-array [255 255 255 255]))
-                                      68)
-
-                  (and (not= (r.ip-address/->int (:ciaddr request)) 0)
-                       (#{DHCPOFFER DHCPACK} message-type))
-                  (InetSocketAddress. (InetAddress/getByAddress (r.ip-address/->bytes (:ciaddr request)))
-                                      68)
-
-                  (and (not (zero? (bit-and 0x80 (:flags request))))
-                       (#{DHCPOFFER DHCPACK} message-type))
-                  (InetSocketAddress. (InetAddress/getByAddress (byte-array [255 255 255 255]))
-                                      68)
-
-                  :else
-                  ;; TODO
-                  ;; If the broadcast bit is not set and 'giaddr' is zero and
-                  ;;   'ciaddr' is zero, then the server unicasts DHCPOFFER and DHCPACK
-                  ;;   messages to the client's hardware address and 'yiaddr' address.
-                  (throw (ex-info "not implemented" {})))]
-    (DatagramPacket. data
-                     (int (count data))
-                     ^InetSocketAddress address)))
+        {:keys [:dest-ip-addr :dest-mac-addr :dest-port]} (get-packet-info request reply)]
+    (->> (create-udp-datagram (:local-ip-address request)
+                              dest-ip-addr
+                              dest-port
+                              data)
+         (create-ip-packet (:local-ip-address request) dest-ip-addr)
+         (create-ethernet-frame (:local-hw-address request) dest-mac-addr))))
 
 (defn send-packet
-  [^RawSocket _socket
-   ^DhcpMessage _request
-   ^DhcpMessage _reply]
-  ;; TODO
-  )
+  [^RawSocket socket
+   ^DhcpMessage request
+   ^DhcpMessage reply]
+  (let [eth-frame (create-datagram request reply)]
+    (.write socket nil (byte-array eth-frame))))
