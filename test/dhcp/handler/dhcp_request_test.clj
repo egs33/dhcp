@@ -239,4 +239,7 @@
                            :expired-at (.plusSeconds mock-now 3600))]
                    (map th/array->vec-recursively
                         (c.database/find-leases-by-ip-address-range
-                         db (byte-array [192 168 0 100]) (byte-array [192 168 0 100])))))))))))
+                         db (byte-array [192 168 0 100]) (byte-array [192 168 0 100]))))))))))
+  (testing "request-in-init-reboot"
+           ;; TODO
+           ))

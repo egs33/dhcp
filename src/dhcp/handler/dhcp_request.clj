@@ -24,14 +24,35 @@
 
 (defn- now [] (Instant/now))
 
+(defn- create-dhcp-nak [message ^bytes l-addr]
+  (r.dhcp-message/map->DhcpMessage
+   {:op :BOOTREPLY
+    :htype (:htype message)
+    :hlen (:hlen message)
+    :hops (byte 0)
+    :xid (:xid message)
+    :secs 0
+    :flags (:flags message)
+    :ciaddr (r.ip-address/->IpAddress 0)
+    :yiaddr (r.ip-address/->IpAddress 0)
+    :siaddr (r.ip-address/->IpAddress 0)
+    :giaddr (:giaddr message)
+    :chaddr (:chaddr message)
+    :sname ""
+    :file ""
+    :options [{:code 53, :type :dhcp-message-type, :length 1, :value [DHCPNAK]}
+              {:code 54, :type :dhcp-server-id
+               :length 4, :value (vec l-addr)}]}))
+
 (defn- request-in-selecting
   [^RawSocket socket
    ^IDatabase db
    subnet
    ^DhcpPacket packet
-   s-id]
+   s-id
+   requested-addr]
   (let [message (:message packet)
-        requested (some-> (r.dhcp-message/get-option message 50)
+        requested (some-> requested-addr
                           byte-array
                           u.bytes/bytes->number)
         l-addr (.getAddress (:local-ip-address packet))]
@@ -46,24 +67,7 @@
                                       (.isBefore (Instant/now) (:expired-at %)))))]
         (if (empty? leases)
           (let [_ (log/debug "DHCPREQUEST received, but no lease found")
-                reply (r.dhcp-message/map->DhcpMessage
-                       {:op :BOOTREPLY
-                        :htype (:htype message)
-                        :hlen (:hlen message)
-                        :hops (byte 0)
-                        :xid (:xid message)
-                        :secs 0
-                        :flags (:flags message)
-                        :ciaddr (r.ip-address/->IpAddress 0)
-                        :yiaddr (r.ip-address/->IpAddress 0)
-                        :siaddr (r.ip-address/->IpAddress 0)
-                        :giaddr (:giaddr message)
-                        :chaddr (:chaddr message)
-                        :sname ""
-                        :file ""
-                        :options [{:code 53, :type :dhcp-message-type, :length 1, :value [DHCPNAK]}
-                                  {:code 54, :type :dhcp-server-id
-                                   :length 4, :value (vec l-addr)}]})]
+                reply (create-dhcp-nak message l-addr)]
             (core.packet/send-packet socket message reply))
           (let [req-ip-bytes (byte-array (u.bytes/number->byte-coll requested 4))
                 pool (core.lease/select-pool-by-ip-address subnet req-ip-bytes)
@@ -105,18 +109,86 @@
                         :options options})]
             (core.packet/send-packet socket message reply)))))))
 
+(defn- request-in-init-reboot
+  [^RawSocket socket
+   ^IDatabase db
+   subnet
+   ^DhcpPacket packet
+   requested-addr]
+  (let [requested-addr (some-> requested-addr
+                               byte-array
+                               u.bytes/bytes->number)
+        message (:message packet)]
+    (if (or (nil? subnet)
+            (nil? requested-addr)
+            (not (<= (r.ip-address/->int (:start-address subnet))
+                     requested-addr
+                     (r.ip-address/->int (:end-address subnet)))))
+      (let [l-addr (.getAddress (:local-ip-address packet))
+            _ (log/debug "DHCPREQUEST received, but invalid subnet or requested address")
+            reply (create-dhcp-nak message l-addr)]
+        (core.packet/send-packet socket message reply))
+      (let [leases (->> (c.database/find-leases-by-hw-address db (:chaddr message))
+                        (filter #(and (.isBefore (Instant/now) (:expired-at %))
+                                      (= (:status %) "lease"))))]
+        (if (empty? leases)
+          (log/infof "no lease found for %s" (:chaddr message))
+          (if (->> leases
+                   (filter #(= requested-addr (u.bytes/bytes->number (:ip-address %))))
+                   seq)
+            (let [req-ip-bytes (byte-array (u.bytes/number->byte-coll requested-addr 4))
+                  pool (core.lease/select-pool-by-ip-address subnet req-ip-bytes)
+                  options-by-code (reduce #(assoc %1 (:code %2) %2) {} (:options pool))
+                  requested-params (->> (r.dhcp-message/get-option message 55)
+                                        (map #(Byte/toUnsignedInt %))
+                                        distinct
+                                        (keep #(get options-by-code %)))
+                  options (concat [{:code 53, :type :dhcp-message-type, :length 1, :value [DHCPACK]}
+                                   {:code 51, :type :address-time
+                                    :length 4, :value (u.bytes/number->byte-coll (:lease-time pool) 4)}
+                                   {:code 54, :type :dhcp-server-id
+                                    :length 4, :value (->> (.getAddress (:local-ip-address packet))
+                                                           (map #(Byte/toUnsignedInt %)))}]
+                                  requested-params
+                                  [{:code 255, :type :end, :length 0, :value []}])
+                  reply (r.dhcp-message/map->DhcpMessage
+                         {:op :BOOTREPLY
+                          :htype (:htype message)
+                          :hlen (:hlen message)
+                          :hops (byte 0)
+                          :xid (:xid message)
+                          :secs 0
+                          :flags (:flags message)
+                          :ciaddr (r.ip-address/->IpAddress 0)
+                          :yiaddr (r.ip-address/->IpAddress requested-addr)
+                          :siaddr (r.ip-address/->IpAddress 0)
+                          :giaddr (:giaddr message)
+                          :chaddr (:chaddr message)
+                          :sname ""
+                          :file ""
+                          :options options})]
+              (core.packet/send-packet socket message reply))
+            (let [l-addr (.getAddress (:local-ip-address packet))
+                  _ (log/debug "DHCPREQUEST received, but lease record mismatch")
+                  reply (create-dhcp-nak message l-addr)]
+              (core.packet/send-packet socket message reply))))))))
+
 (defmethod h/handler DHCPREQUEST
   [^RawSocket socket
    ^IDatabase db
    ^Config config
    ^DhcpPacket packet]
   (log/debugf "DHCPDISCOVER %s" (:message packet))
-  (if-let [subnet (r.config/select-subnet config (:local-ip-address packet))]
-    (let [message (:message packet)
-          s-id (r.dhcp-message/get-option message 54)
-          #_#_requested (r.dhcp-message/get-option message 50)
-          #_#_l-addr (vec (.getAddress (:local-address message)))]
-      (cond
-        s-id
-        (request-in-selecting socket db subnet packet s-id)))
-    (log/infof "no subnet found for %s" (:local-ip-address packet))))
+  (let [subnet (r.config/select-subnet config (:local-ip-address packet))
+        message (:message packet)
+        s-id (r.dhcp-message/get-option message 54)
+        requested (r.dhcp-message/get-option message 50)
+        #_#_l-addr (vec (.getAddress (:local-address message)))]
+    (cond
+      s-id
+      (if subnet
+        (request-in-selecting socket db subnet packet s-id requested)
+        (log/infof "no subnet found for %s" (:local-ip-address packet)))
+
+      requested
+      (request-in-init-reboot socket db subnet packet requested))))
