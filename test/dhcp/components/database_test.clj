@@ -47,27 +47,6 @@
                                      :ip-address (byte-array [192 168 0 1])
                                      :source "invalid"}))))))
 
-[:and
- [:map {:closed true}
-  [:client-id [:and
-               bytes?
-               [:fn #(pos? (count %))]]]
-  [:hw-address [:and
-                bytes?
-                [:fn #(pos? (count %))]]]
-  [:ip-address [:and
-                bytes?
-                [:fn #(= (count %) 4)]]]
-  [:hostname string?]
-  [:lease-time pos-int?]
-  [:status [:enum "offer" "lease"]]
-  [:offered-at :time/instant]
-  [:leased-at [:maybe :time/instant]]
-  [:expired-at :time/instant]]
- [:fn (fn [{:keys [:status :leased-at]}]
-        (or (= status "offer")
-            (some? leased-at)))]]
-
 (deftest assert-lease-test
   (testing "valid lease"
     (testing "case1"
