@@ -3,6 +3,7 @@
    [clojure.core.async :as as]
    [clojure.tools.logging :as log]
    [com.stuartsierra.component :as component]
+   [dhcp.components.socket :as c.socket]
    [dhcp.records.dhcp-message :as r.dhcp-message]
    [dhcp.records.dhcp-packet :as r.packet]
    [dhcp.records.ip-address :as r.ip-address]
@@ -11,8 +12,6 @@
    (clojure.lang
     ExceptionInfo
     IFn)
-   (com.savarese.rocksaw.net
-    RawSocket)
    (java.net
     Inet4Address
     NetworkInterface
@@ -90,17 +89,14 @@
   IUdpServerSocket
   (open [_]
     (when @socket-atom
-      (.close @socket-atom))
-    (let [socket (RawSocket.)]
-      (.open socket (RawSocket/AF_PACKET) (RawSocket/ETH_P_IP))
-      (.bindAfPacket socket device-name)
+      (c.socket/close @socket-atom))
+    (let [socket (c.socket/newEthSocket device-name)]
+      (c.socket/open socket)
       (as/go-loop []
-        (if (.isOpen socket)
+        (if (c.socket/open? socket)
           (let [packet (as/<! (as/thread
                                 (try
-                                  (let [buf (byte-array 2048)
-                                        len (.read socket buf)]
-                                    (Arrays/copyOfRange buf 0 len))
+                                  (c.socket/receive socket)
                                   (catch SocketException e
                                     (log/infof "socket exception %s" e))
                                   (catch ExceptionInfo e
@@ -141,8 +137,8 @@
   IBlockUntilClose
   (blocks-until-close [_]
     (as/<!! (as/go-loop []
-              (when-let [^RawSocket socket @socket-atom]
-                (when (.isOpen socket)
+              (when-let [socket @socket-atom]
+                (when (c.socket/open? socket)
                   (as/<! (as/timeout 1000))
                   (recur)))))))
 
