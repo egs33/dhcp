@@ -1,28 +1,29 @@
 (ns dhcp.handler
   (:require
    [clojure.tools.logging :as log]
+   [dhcp.components.socket]
    [dhcp.records.config]
    [dhcp.records.dhcp-message :as r.dhcp-message]
    [dhcp.records.dhcp-packet])
   (:import
-   (com.savarese.rocksaw.net
-    RawSocket)
    (dhcp.components.database
     IDatabase)
+   (dhcp.components.socket
+    ISocket)
    (dhcp.records.config
     Config)
    (dhcp.records.dhcp_packet
     DhcpPacket)))
 
 (defmulti handler
-  (fn [^RawSocket _
+  (fn [^ISocket _
        ^IDatabase _
        ^Config _
        ^DhcpPacket {:keys [:message]}]
     (r.dhcp-message/getType message)))
 
 (defmethod handler :default
-  [^RawSocket _
+  [^ISocket _
    ^IDatabase _
    ^Config _
    ^DhcpPacket {:keys [:message]}]

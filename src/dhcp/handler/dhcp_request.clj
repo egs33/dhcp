@@ -2,6 +2,7 @@
   (:require
    [clojure.tools.logging :as log]
    [dhcp.components.database :as c.database]
+   [dhcp.components.socket]
    [dhcp.const.dhcp-type :refer [DHCPREQUEST DHCPACK DHCPNAK]]
    [dhcp.core.lease :as core.lease]
    [dhcp.core.packet :as core.packet]
@@ -11,10 +12,10 @@
    [dhcp.records.ip-address :as r.ip-address]
    [dhcp.util.bytes :as u.bytes])
   (:import
-   (com.savarese.rocksaw.net
-    RawSocket)
    (dhcp.components.database
     IDatabase)
+   (dhcp.components.socket
+    ISocket)
    (dhcp.records.config
     Config)
    (dhcp.records.dhcp_packet
@@ -45,7 +46,7 @@
                :length 4, :value (vec l-addr)}]}))
 
 (defn- request-in-selecting
-  [^RawSocket socket
+  [^ISocket socket
    ^IDatabase db
    subnet
    ^DhcpPacket packet
@@ -110,7 +111,7 @@
             (core.packet/send-packet socket message reply)))))))
 
 (defn- request-in-init-reboot
-  [^RawSocket socket
+  [^ISocket socket
    ^IDatabase db
    subnet
    ^DhcpPacket packet
@@ -174,7 +175,7 @@
               (core.packet/send-packet socket message reply))))))))
 
 (defmethod h/handler DHCPREQUEST
-  [^RawSocket socket
+  [^ISocket socket
    ^IDatabase db
    ^Config config
    ^DhcpPacket packet]
@@ -183,7 +184,7 @@
         message (:message packet)
         s-id (r.dhcp-message/get-option message 54)
         requested (r.dhcp-message/get-option message 50)
-        #_#_l-addr (vec (.getAddress (:local-address message)))]
+        l-addr (vec (.getAddress (:local-ip-address packet)))]
     (cond
       s-id
       (if subnet
@@ -191,4 +192,7 @@
         (log/infof "no subnet found for %s" (:local-ip-address packet)))
 
       requested
-      (request-in-init-reboot socket db subnet packet requested))))
+      (request-in-init-reboot socket db subnet packet requested)
+
+      (not (:is-broadcast packet))
+      nil)))

@@ -2,6 +2,7 @@
   (:require
    [clojure.tools.logging :as log]
    [dhcp.components.database :as c.database]
+   [dhcp.components.socket]
    [dhcp.const.dhcp-type :refer [DHCPDISCOVER DHCPOFFER]]
    [dhcp.core.lease :as core.lease]
    [dhcp.core.packet :as core.packet]
@@ -11,10 +12,10 @@
    [dhcp.records.ip-address :as r.ip-address]
    [dhcp.util.bytes :as u.bytes])
   (:import
-   (com.savarese.rocksaw.net
-    RawSocket)
    (dhcp.components.database
     IDatabase)
+   (dhcp.components.socket
+    ISocket)
    (dhcp.records.config
     Config)
    (dhcp.records.dhcp_packet
@@ -34,7 +35,7 @@
            US-ASCII))
 
 (defmethod h/handler DHCPDISCOVER
-  [^RawSocket socket
+  [^ISocket socket
    ^IDatabase db
    ^Config config
    ^DhcpPacket packet]

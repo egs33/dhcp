@@ -1,5 +1,6 @@
 (ns dhcp.core.packet
   (:require
+   [dhcp.components.socket :as c.socket]
    [dhcp.components.udp-server :refer [UDP-SERVER-PORT]]
    [dhcp.const.dhcp-type :refer [DHCPNAK DHCPOFFER DHCPACK]]
    [dhcp.records.dhcp-message :as r.dhcp-message]
@@ -7,8 +8,8 @@
    [dhcp.records.ip-address :as r.ip-address]
    [dhcp.util.bytes :as u.bytes])
   (:import
-   (com.savarese.rocksaw.net
-    RawSocket)
+   (dhcp.components.socket
+    ISocket)
    (dhcp.records.dhcp_message
     DhcpMessage)
    (dhcp.records.dhcp_packet
@@ -130,8 +131,8 @@
          (create-ethernet-frame (:local-hw-address request) dest-mac-addr))))
 
 (defn send-packet
-  [^RawSocket socket
+  [^ISocket socket
    ^DhcpMessage request
    ^DhcpMessage reply]
   (let [eth-frame (create-datagram request reply)]
-    (.write socket nil (byte-array eth-frame))))
+    (c.socket/send socket (byte-array eth-frame))))
