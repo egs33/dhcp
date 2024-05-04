@@ -183,8 +183,7 @@
   (let [subnet (r.config/select-subnet config (:local-ip-address packet))
         message (:message packet)
         s-id (r.dhcp-message/get-option message 54)
-        requested (r.dhcp-message/get-option message 50)
-        l-addr (vec (.getAddress (:local-ip-address packet)))]
+        requested (r.dhcp-message/get-option message 50)]
     (cond
       s-id
       (if subnet
