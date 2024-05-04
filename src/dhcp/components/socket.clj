@@ -34,8 +34,8 @@
             len (.read @socket-atom buf)]
         (Arrays/copyOfRange buf 0 (int len)))
       (throw (IllegalStateException.))))
-  (send [_ _data]
-    (throw (ex-info "not-implemented" {}))))
+  (send [_ data]
+    (.writeEth ^RawSocket @socket-atom device-name data 0 (count data))))
 
 (defn newEthSocket [^String device-name]
   (->EthSocket device-name (atom nil)))
