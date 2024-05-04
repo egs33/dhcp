@@ -5,9 +5,9 @@ if [ ! -e rocksaw-1.1.0-src.tar.gz ];then
 fi
 tar -xf rocksaw-1.1.0-src.tar.gz
 
-cd rocksaw-1.1.0
+patch -p1 < ./rocksaw-diff.patch
 
-patch -p1 < ../rocksaw-diff.patch
+cd rocksaw-1.1.0
 
 JDK_HOME=$JAVA_HOME ant jar
 
