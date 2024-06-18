@@ -4,7 +4,9 @@
    [dhcp.components.database]
    [dhcp.components.socket]
    [dhcp.handler :as h]
+   [dhcp.handler.dhcp-decline]
    [dhcp.handler.dhcp-discover]
+   [dhcp.handler.dhcp-release]
    [dhcp.handler.dhcp-request]
    [dhcp.records.config])
   (:import
