@@ -20,8 +20,13 @@
     Config)
    (dhcp.records.dhcp_packet
     DhcpPacket)
+   (dhcp.records.ip_address
+    IpAddress)
    (java.time
-    Instant)))
+    Instant)
+   (java.time.temporal
+    ChronoUnit
+    TemporalUnit)))
 
 (defn- now [] (Instant/now))
 
@@ -174,6 +179,71 @@
                   reply (create-dhcp-nak message l-addr)]
               (core.packet/send-packet socket message reply))))))))
 
+(defn- request-in-renewing
+  [^ISocket socket
+   ^IDatabase db
+   subnet
+   ^DhcpPacket packet]
+  (let [{:keys [:ciaddr] :as message} (:message packet)
+        lease-time-opt (some-> (r.dhcp-message/get-option message 51)
+                               byte-array
+                               u.bytes/bytes->number)
+        leases (->> (c.database/find-leases-by-hw-address db ciaddr)
+                    (filter #(and (.isBefore (Instant/now) (:expired-at %))
+                                  (= (:status %) "lease"))))]
+    (if (empty? leases)
+      (let [_ (log/info "DHCPREQUEST received, but no lease found")
+            l-addr (.getAddress (:local-ip-address packet))
+            reply (create-dhcp-nak message l-addr)]
+        (core.packet/send-packet socket message reply))
+      (let [pool (core.lease/select-pool-by-ip-address subnet (r.ip-address/->bytes ciaddr))
+            lease-time (if lease-time-opt
+                         (min lease-time-opt (:lease-time pool))
+                         (:lease-time pool))
+            lease-time (-> (first leases)
+                           ^Instant (:expired-at)
+                           (.until (now) ChronoUnit/SECONDS)
+                           (+ lease-time))
+            lease-time (max lease-time 600)
+            _ (c.database/update-lease db
+                                       (:chaddr message)
+                                       (r.ip-address/->bytes ciaddr)
+                                       {:expired-at (.plusSeconds (now) lease-time)})
+            _ (log/debugf "DHCPREQUEST lease updated %s" (u.bytes/->str (byte-array (:chaddr message))))
+            options-by-code (reduce #(assoc %1 (:code %2) %2) {} (:options pool))
+            requested-params (->> (r.dhcp-message/get-option message 55)
+                                  (map #(Byte/toUnsignedInt %))
+                                  distinct
+                                  (keep #(get options-by-code %)))
+            options (concat [{:code 53, :type :dhcp-message-type, :length 1, :value [DHCPACK]}
+                             {:code 51, :type :address-time
+                              :length 4, :value (u.bytes/number->byte-coll (:lease-time pool) 4)}
+                             {:code 54, :type :dhcp-server-id
+                              :length 4, :value (->> (.getAddress (:local-ip-address packet))
+                                                     (map #(Byte/toUnsignedInt %)))}]
+                            requested-params
+                            [{:code 255, :type :end, :length 0, :value []}])
+            reply (r.dhcp-message/map->DhcpMessage
+                   {:op :BOOTREPLY
+                    :htype (:htype message)
+                    :hlen (:hlen message)
+                    :hops (byte 0)
+                    :xid (:xid message)
+                    :secs 0
+                    :flags (:flags message)
+                    :ciaddr (r.ip-address/->IpAddress 0)
+                    :yiaddr (:chaddr message)
+                    :siaddr (r.ip-address/->IpAddress 0)
+                    :giaddr (:giaddr message)
+                    :chaddr (:chaddr message)
+                    :sname ""
+                    :file ""
+                    :options options})]
+        (core.packet/send-packet socket message reply)))))
+
+(defn- request-in-rebinding []
+  (log/info "request-in-rebinding not implemented"))
+
 (defmethod h/handler DHCPREQUEST
   [^ISocket socket
    ^IDatabase db
@@ -193,5 +263,11 @@
       requested
       (request-in-init-reboot socket db subnet packet requested)
 
-      (not (:is-broadcast packet))
-      nil)))
+      (zero? (r.ip-address/->int (:ciaddr message)))
+      (log/info "invalid DHCPREQUEST")
+
+      (:is-broadcast packet)
+      (request-in-rebinding)
+
+      :else
+      (request-in-renewing socket db subnet (:ciaddr message)))))
