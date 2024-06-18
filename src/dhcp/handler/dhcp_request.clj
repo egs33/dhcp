@@ -20,13 +20,10 @@
     Config)
    (dhcp.records.dhcp_packet
     DhcpPacket)
-   (dhcp.records.ip_address
-    IpAddress)
    (java.time
     Instant)
    (java.time.temporal
-    ChronoUnit
-    TemporalUnit)))
+    ChronoUnit)))
 
 (defn- now [] (Instant/now))
 
