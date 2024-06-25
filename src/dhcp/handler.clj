@@ -21,7 +21,7 @@
        ^IDatabase _
        ^Config _
        ^DhcpPacket {:keys [:message]}]
-    (r.dhcp-message/getType message)))
+    (r.dhcp-message/get-type message)))
 
 (defmethod handler :default
   [^ISocket _
@@ -29,4 +29,4 @@
    ^Config _
    ^DhcpPacket {:keys [:message]}]
   (log/warnf "undefined message type:%s"
-             (r.dhcp-message/getType message)))
+             (r.dhcp-message/get-type message)))

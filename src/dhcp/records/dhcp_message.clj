@@ -17,7 +17,7 @@
     Arrays)))
 
 (defprotocol IDhcpMessage
-  (getType [this])
+  (get-type [this])
   (->bytes [this])
   (get-option [this code]))
 
@@ -52,7 +52,7 @@
                         ^String file
                         options]
   IDhcpMessage
-  (getType [_]
+  (get-type [_]
     (->> options
          (filter #(= (:type %) :dhcp-message-type))
          first
