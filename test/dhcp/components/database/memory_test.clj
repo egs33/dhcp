@@ -1,7 +1,7 @@
-(ns dhcp.components.database-test
+(ns dhcp.components.database.memory-test
   (:require
    [clojure.test :refer [deftest is testing]]
-   [dhcp.components.database :as sut]
+   [dhcp.components.database.memory :as sut]
    [dhcp.protocol.database :as p.db]
    [dhcp.test-helper :as th])
   (:import

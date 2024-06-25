@@ -1,4 +1,4 @@
-(ns dhcp.components.database
+(ns dhcp.components.database.memory
   (:require
    [clojure.tools.logging :as log]
    [dhcp.protocol.database :as p.db]

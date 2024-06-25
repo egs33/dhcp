@@ -1,7 +1,6 @@
 (ns dhcp.components.handler
   (:require
    [com.stuartsierra.component :as component]
-   [dhcp.components.database]
    [dhcp.components.socket]
    [dhcp.handler :as h]
    [dhcp.handler.dhcp-decline]

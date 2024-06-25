@@ -3,7 +3,7 @@
    [aero.core :as aero]
    [clojure.java.io :as io]
    [com.stuartsierra.component :as component]
-   [dhcp.components.database :as c.database]
+   [dhcp.components.database.memory :as db.mem]
    [dhcp.components.handler :as c.handler]
    [dhcp.components.udp-server :as c.udp-server]
    [dhcp.records.config :as r.config]
@@ -12,7 +12,7 @@
 (defn- new-system [_config server-config]
   (component/system-map
    :db (case (get-in server-config [:database :type])
-         "memory" (c.database/new-memory-database)
+         "memory" (db.mem/new-memory-database)
          (throw (IllegalArgumentException. (str "Unsupported database type: " type))))
    :handler (component/using
              (c.handler/map->Handler {:config server-config})
