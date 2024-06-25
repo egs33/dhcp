@@ -57,7 +57,7 @@
 
 (deftest handler-dhcp-discover-test
   (testing "no subnet definition"
-    (let [db (c.database/create-database "memory")]
+    (let [db (c.database/new-memory-database)]
       (is (nil? (h/handler th/socket-mock
                            db
                            (reify
@@ -66,7 +66,7 @@
                            sample-packet)))))
   (testing "no available lease"
     (with-redefs [core.lease/choose-ip-address (constantly nil)]
-      (let [db (c.database/create-database "memory")]
+      (let [db (c.database/new-memory-database)]
         (is (nil? (h/handler th/socket-mock
                              db
                              (reify
@@ -78,7 +78,7 @@
                                                             :ip-address (byte-array [192 168 0 25])
                                                             :status :new
                                                             :lease-time 3600})]
-      (let [db (c.database/create-database "memory")
+      (let [db (c.database/new-memory-database)
             _ (p.db/add-lease db {:client-id (byte-array [1 11 22 33 44 55 66])
                                   :hw-address (byte-array [11 22 33 44 55 66])
                                   :ip-address (byte-array [192 168 0 123])

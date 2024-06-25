@@ -105,7 +105,7 @@
 (deftest memory-database-test
   (testing "reservation-tests"
     (testing "add-and-get-reservations-test"
-      (let [db (sut/create-database "memory")]
+      (let [db (sut/new-memory-database)]
         (testing "add 2 reservations"
           (p.db/add-reservations db [{:hw-address (byte-array [1 2 3 4 5 6])
                                       :ip-address (byte-array [192 168 0 1])
@@ -156,7 +156,7 @@
                                               :ip-address (byte-array [192 168 0 1])
                                               :source "config"}])))))))
     (testing "find-tests"
-      (let [db (sut/create-database "memory")]
+      (let [db (sut/new-memory-database)]
         (p.db/add-reservations db [{:hw-address (byte-array [1 2 3 4 5 6])
                                     :ip-address (byte-array [192 168 0 1])
                                     :source "config"}
@@ -218,7 +218,7 @@
                     (p.db/find-reservations-by-ip-address-range
                      db (byte-array [172 16 1 1]) (byte-array [192 168 0 1])))))))))
     (testing "delete-reservation-tests"
-      (let [db (sut/create-database "memory")]
+      (let [db (sut/new-memory-database)]
         (p.db/add-reservations db [{:hw-address (byte-array [1 2 3 4 5 6])
                                     :ip-address (byte-array [192 168 0 1])
                                     :source "config"}
@@ -245,7 +245,7 @@
                  (th/array->vec-recursively (p.db/get-all-reservations db))))))))
   (testing "lease-tests"
     (testing "add-and-get-leases-test"
-      (let [db (sut/create-database "memory")
+      (let [db (sut/new-memory-database)
             now (Instant/now)]
         (testing "add lease"
           (p.db/add-lease db {:client-id (byte-array [1 2 3 4 5 6])
@@ -302,7 +302,7 @@
             (is (thrown? IllegalArgumentException
                   (p.db/add-lease db {})))))))
     (testing "find-tests"
-      (let [db (sut/create-database "memory")
+      (let [db (sut/new-memory-database)
             now (Instant/now)]
         (p.db/add-lease db {:client-id (byte-array [1 2 3 4 5 6])
                             :hw-address (byte-array [1 2 3 4 5 6])
@@ -413,7 +413,7 @@
              ;; TODO
              )
     (testing "delete-lease-tests"
-      (let [db (sut/create-database "memory")
+      (let [db (sut/new-memory-database)
             now (Instant/now)]
         (p.db/add-lease db {:client-id (byte-array [1 2 3 4 5 6])
                             :hw-address (byte-array [1 2 3 4 5 6])

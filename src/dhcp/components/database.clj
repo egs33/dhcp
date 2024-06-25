@@ -133,11 +133,6 @@
                                            e-ip-value))
                                  coll))))))))
 
-(defn- new-memory-database []
+(defn new-memory-database []
   (->MemoryDatabase (atom {:reservation []
                            :lease []})))
-
-(defn create-database [type]
-  (case type
-    "memory" (new-memory-database)
-    (throw (IllegalArgumentException. (str "Unsupported database type: " type)))))

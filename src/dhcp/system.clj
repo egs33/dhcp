@@ -11,7 +11,9 @@
 
 (defn- new-system [_config server-config]
   (component/system-map
-   :db (c.database/create-database (get-in server-config [:database :type]))
+   :db (case (get-in server-config [:database :type])
+         "memory" (c.database/new-memory-database)
+         (throw (IllegalArgumentException. (str "Unsupported database type: " type))))
    :handler (component/using
              (c.handler/map->Handler {:config server-config})
              [:db])

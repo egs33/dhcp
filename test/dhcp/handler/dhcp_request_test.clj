@@ -60,7 +60,7 @@
 
 (deftest handler-dhcp-request-test
   (testing "no subnet definition"
-    (let [db (c.database/create-database "memory")]
+    (let [db (c.database/new-memory-database)]
       (is (nil? (h/handler th/socket-mock
                            db
                            (reify
@@ -68,7 +68,7 @@
                              (select-subnet [_ _] nil))
                            sample-packet)))))
   (testing "request-in-selecting"
-    (let [db (c.database/create-database "memory")
+    (let [db (c.database/new-memory-database)
           config (reify
                    r.config/IConfig
                    (select-subnet [_ _] sample-subnet))]
@@ -194,7 +194,7 @@
                                                        :sname ""})
                      @packet-to-send))))))
       (testing "send DHCPACK and update lease"
-        (let [db (c.database/create-database "memory")
+        (let [db (c.database/new-memory-database)
               packet-to-send (atom nil)
               lease {:client-id (byte-array [1 11 22 33 44 55])
                      :hw-address (byte-array [11 22 33 44 55 66])
