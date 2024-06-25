@@ -6,6 +6,7 @@
    [dhcp.core.lease :as core.lease]
    [dhcp.core.packet :as core.packet]
    [dhcp.handler :as h]
+   [dhcp.protocol.database :as p.db]
    [dhcp.records.config :as r.config]
    [dhcp.records.dhcp-message :as r.dhcp-message]
    [dhcp.records.dhcp-packet :as r.packet]
@@ -78,15 +79,15 @@
                                                             :status :new
                                                             :lease-time 3600})]
       (let [db (c.database/create-database "memory")
-            _ (c.database/add-lease db {:client-id (byte-array [1 11 22 33 44 55 66])
-                                        :hw-address (byte-array [11 22 33 44 55 66])
-                                        :ip-address (byte-array [192 168 0 123])
-                                        :hostname ""
-                                        :lease-time 3600
-                                        :status "lease"
-                                        :offered-at (Instant/now)
-                                        :leased-at (Instant/now)
-                                        :expired-at (Instant/now)})
+            _ (p.db/add-lease db {:client-id (byte-array [1 11 22 33 44 55 66])
+                                  :hw-address (byte-array [11 22 33 44 55 66])
+                                  :ip-address (byte-array [192 168 0 123])
+                                  :hostname ""
+                                  :lease-time 3600
+                                  :status "lease"
+                                  :offered-at (Instant/now)
+                                  :leased-at (Instant/now)
+                                  :expired-at (Instant/now)})
             packet-to-send (atom nil)]
         (is (nil?
              (with-redefs [core.packet/send-packet (fn [_ _ reply] (reset! packet-to-send reply) nil)]
@@ -104,7 +105,7 @@
                  :status "offer"
                  :leased-at nil}]
                (th/array->vec-recursively (map #(dissoc % :offered-at :expired-at)
-                                               (c.database/get-all-leases db)))))
+                                               (p.db/get-all-leases db)))))
         (is (= (r.dhcp-message/map->DhcpMessage {:op :BOOTREPLY
                                                  :htype (byte 1)
                                                  :hlen (byte 6)

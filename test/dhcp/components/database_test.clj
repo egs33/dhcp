@@ -2,6 +2,7 @@
   (:require
    [clojure.test :refer [deftest is testing]]
    [dhcp.components.database :as sut]
+   [dhcp.protocol.database :as p.db]
    [dhcp.test-helper :as th])
   (:import
    (java.time
@@ -106,35 +107,35 @@
     (testing "add-and-get-reservations-test"
       (let [db (sut/create-database "memory")]
         (testing "add 2 reservations"
-          (sut/add-reservations db [{:hw-address (byte-array [1 2 3 4 5 6])
-                                     :ip-address (byte-array [192 168 0 1])
-                                     :source "config"}
-                                    {:hw-address (byte-array [10 20 30])
-                                     :ip-address (byte-array [172 16 0 20])
-                                     :source "api"}])
+          (p.db/add-reservations db [{:hw-address (byte-array [1 2 3 4 5 6])
+                                      :ip-address (byte-array [192 168 0 1])
+                                      :source "config"}
+                                     {:hw-address (byte-array [10 20 30])
+                                      :ip-address (byte-array [172 16 0 20])
+                                      :source "api"}])
           (is (= [{:hw-address (th/byte-vec [1 2 3 4 5 6])
                    :ip-address (th/byte-vec [192 168 0 1])
                    :source "config"}
                   {:hw-address (th/byte-vec [10 20 30])
                    :ip-address (th/byte-vec [172 16 0 20])
                    :source "api"}]
-                 (th/array->vec-recursively (sut/get-all-reservations db)))))
+                 (th/array->vec-recursively (p.db/get-all-reservations db)))))
         (testing "add no reservations"
-          (sut/add-reservations db [])
+          (p.db/add-reservations db [])
           (is (= [{:hw-address (th/byte-vec [1 2 3 4 5 6])
                    :ip-address (th/byte-vec [192 168 0 1])
                    :source "config"}
                   {:hw-address (th/byte-vec [10 20 30])
                    :ip-address (th/byte-vec [172 16 0 20])
                    :source "api"}]
-                 (th/array->vec-recursively (sut/get-all-reservations db)))))
+                 (th/array->vec-recursively (p.db/get-all-reservations db)))))
         (testing "add more reservations"
-          (sut/add-reservations db [{:hw-address (byte-array [7 8 9 10 11 12])
-                                     :ip-address (byte-array [192 168 0 5])
-                                     :source "config"}
-                                    {:hw-address (byte-array [10 20 31])
-                                     :ip-address (byte-array [172 16 0 21])
-                                     :source "api"}])
+          (p.db/add-reservations db [{:hw-address (byte-array [7 8 9 10 11 12])
+                                      :ip-address (byte-array [192 168 0 5])
+                                      :source "config"}
+                                     {:hw-address (byte-array [10 20 31])
+                                      :ip-address (byte-array [172 16 0 21])
+                                      :source "api"}])
           (is (= [{:hw-address (th/byte-vec [1 2 3 4 5 6])
                    :ip-address (th/byte-vec [192 168 0 1])
                    :source "config"}
@@ -147,34 +148,34 @@
                   {:hw-address (th/byte-vec [10 20 31])
                    :ip-address (th/byte-vec [172 16 0 21])
                    :source "api"}]
-                 (th/array->vec-recursively (sut/get-all-reservations db)))))
+                 (th/array->vec-recursively (p.db/get-all-reservations db)))))
         (testing "throw exception when adding invalid reservation"
           (testing "empty hw-address"
             (is (thrown? IllegalArgumentException
-                  (sut/add-reservations db [{:hw-address (byte-array [])
-                                             :ip-address (byte-array [192 168 0 1])
-                                             :source "config"}])))))))
+                  (p.db/add-reservations db [{:hw-address (byte-array [])
+                                              :ip-address (byte-array [192 168 0 1])
+                                              :source "config"}])))))))
     (testing "find-tests"
       (let [db (sut/create-database "memory")]
-        (sut/add-reservations db [{:hw-address (byte-array [1 2 3 4 5 6])
-                                   :ip-address (byte-array [192 168 0 1])
-                                   :source "config"}
-                                  {:hw-address (byte-array [10 20 30])
-                                   :ip-address (byte-array [172 16 0 20])
-                                   :source "api"}
-                                  {:hw-address (byte-array [1 2 3 4 5 6])
-                                   :ip-address (byte-array [172 16 1 1])
-                                   :source "config"}])
+        (p.db/add-reservations db [{:hw-address (byte-array [1 2 3 4 5 6])
+                                    :ip-address (byte-array [192 168 0 1])
+                                    :source "config"}
+                                   {:hw-address (byte-array [10 20 30])
+                                    :ip-address (byte-array [172 16 0 20])
+                                    :source "api"}
+                                   {:hw-address (byte-array [1 2 3 4 5 6])
+                                    :ip-address (byte-array [172 16 1 1])
+                                    :source "config"}])
         (testing "find-reservations-by-hw-address-test"
           (testing "hit no entry"
             (is (= []
-                   (sut/find-reservations-by-hw-address db (byte-array [10 20 30 40 50 60])))))
+                   (p.db/find-reservations-by-hw-address db (byte-array [10 20 30 40 50 60])))))
           (testing "hit 1 entry"
             (is (= [{:hw-address (th/byte-vec [10 20 30])
                      :ip-address (th/byte-vec [172 16 0 20])
                      :source "api"}]
                    (th/array->vec-recursively
-                    (sut/find-reservations-by-hw-address db (byte-array [10 20 30]))))))
+                    (p.db/find-reservations-by-hw-address db (byte-array [10 20 30]))))))
           (testing "hit 2 entry"
             (is (= [{:hw-address (th/byte-vec [1 2 3 4 5 6])
                      :ip-address (th/byte-vec [192 168 0 1])
@@ -183,18 +184,18 @@
                      :ip-address (th/byte-vec [172 16 1 1])
                      :source "config"}]
                    (th/array->vec-recursively
-                    (sut/find-reservations-by-hw-address db (byte-array [1 2 3 4 5 6])))))))
+                    (p.db/find-reservations-by-hw-address db (byte-array [1 2 3 4 5 6])))))))
         (testing "find-reservations-by-ip-address-range-test"
           (testing "hit no entry"
             (is (= []
-                   (sut/find-reservations-by-ip-address-range
+                   (p.db/find-reservations-by-ip-address-range
                     db (byte-array [127 0 0 0]) (byte-array [127 255 255 255])))))
           (testing "hit 1 entry"
             (is (= [{:hw-address (th/byte-vec [1 2 3 4 5 6])
                      :ip-address (th/byte-vec [192 168 0 1])
                      :source "config"}]
                    (th/array->vec-recursively
-                    (sut/find-reservations-by-ip-address-range
+                    (p.db/find-reservations-by-ip-address-range
                      db (byte-array [192 168 0 0]) (byte-array [192 168 0 255]))))))
           (testing "hit 2 entry"
             (is (= [{:hw-address (th/byte-vec [10 20 30])
@@ -204,7 +205,7 @@
                      :ip-address (th/byte-vec [172 16 1 1])
                      :source "config"}]
                    (th/array->vec-recursively
-                    (sut/find-reservations-by-ip-address-range
+                    (p.db/find-reservations-by-ip-address-range
                      db (byte-array [172 16 0 0]) (byte-array [172 16 15 255]))))))
           (testing "start and end are inclusive"
             (is (= [{:hw-address (th/byte-vec [1 2 3 4 5 6])
@@ -214,26 +215,26 @@
                      :ip-address (th/byte-vec [172 16 1 1])
                      :source "config"}]
                    (th/array->vec-recursively
-                    (sut/find-reservations-by-ip-address-range
+                    (p.db/find-reservations-by-ip-address-range
                      db (byte-array [172 16 1 1]) (byte-array [192 168 0 1])))))))))
     (testing "delete-reservation-tests"
       (let [db (sut/create-database "memory")]
-        (sut/add-reservations db [{:hw-address (byte-array [1 2 3 4 5 6])
-                                   :ip-address (byte-array [192 168 0 1])
-                                   :source "config"}
-                                  {:hw-address (byte-array [10 20 30])
-                                   :ip-address (byte-array [172 16 0 20])
-                                   :source "api"}
-                                  {:hw-address (byte-array [1 2 3 4 5 6])
-                                   :ip-address (byte-array [172 16 1 1])
-                                   :source "config"}])
+        (p.db/add-reservations db [{:hw-address (byte-array [1 2 3 4 5 6])
+                                    :ip-address (byte-array [192 168 0 1])
+                                    :source "config"}
+                                   {:hw-address (byte-array [10 20 30])
+                                    :ip-address (byte-array [172 16 0 20])
+                                    :source "api"}
+                                   {:hw-address (byte-array [1 2 3 4 5 6])
+                                    :ip-address (byte-array [172 16 1 1])
+                                    :source "config"}])
         (testing "delete no entry"
-          (sut/delete-reservation
+          (p.db/delete-reservation
            db (byte-array [10 20 30 40 50 60]))
           (is (= 3
-                 (count (sut/get-all-reservations db)))))
+                 (count (p.db/get-all-reservations db)))))
         (testing "delete 1 entry"
-          (sut/delete-reservation
+          (p.db/delete-reservation
            db (byte-array [10 20 30]))
           (is (= [{:hw-address (th/byte-vec [1 2 3 4 5 6])
                    :ip-address (th/byte-vec [192 168 0 1])
@@ -241,21 +242,21 @@
                   {:hw-address (th/byte-vec [1 2 3 4 5 6])
                    :ip-address (th/byte-vec [172 16 1 1])
                    :source "config"}]
-                 (th/array->vec-recursively (sut/get-all-reservations db))))))))
+                 (th/array->vec-recursively (p.db/get-all-reservations db))))))))
   (testing "lease-tests"
     (testing "add-and-get-leases-test"
       (let [db (sut/create-database "memory")
             now (Instant/now)]
         (testing "add lease"
-          (sut/add-lease db {:client-id (byte-array [1 2 3 4 5 6])
-                             :hw-address (byte-array [1 2 3 4 5 6])
-                             :ip-address (byte-array [192 168 0 1])
-                             :hostname "host1"
-                             :lease-time 86400
-                             :status "lease"
-                             :offered-at now
-                             :leased-at now
-                             :expired-at now})
+          (p.db/add-lease db {:client-id (byte-array [1 2 3 4 5 6])
+                              :hw-address (byte-array [1 2 3 4 5 6])
+                              :ip-address (byte-array [192 168 0 1])
+                              :hostname "host1"
+                              :lease-time 86400
+                              :status "lease"
+                              :offered-at now
+                              :leased-at now
+                              :expired-at now})
           (is (= [{:client-id (th/byte-vec [1 2 3 4 5 6])
                    :hw-address (th/byte-vec [1 2 3 4 5 6])
                    :ip-address (th/byte-vec [192 168 0 1])
@@ -265,18 +266,18 @@
                    :offered-at now
                    :leased-at now
                    :expired-at now}]
-                 (th/array->vec-recursively (sut/get-all-leases db)))))
+                 (th/array->vec-recursively (p.db/get-all-leases db)))))
         (testing "add more leases"
           (let [now2 (Instant/now)]
-            (sut/add-lease db {:client-id (byte-array [10 20 30])
-                               :hw-address (byte-array [10 20 30])
-                               :ip-address (byte-array [172 16 0 19])
-                               :hostname "host2"
-                               :lease-time 3600
-                               :status "offer"
-                               :offered-at now2
-                               :leased-at nil
-                               :expired-at now2})
+            (p.db/add-lease db {:client-id (byte-array [10 20 30])
+                                :hw-address (byte-array [10 20 30])
+                                :ip-address (byte-array [172 16 0 19])
+                                :hostname "host2"
+                                :lease-time 3600
+                                :status "offer"
+                                :offered-at now2
+                                :leased-at nil
+                                :expired-at now2})
             (is (= [{:client-id (th/byte-vec [1 2 3 4 5 6])
                      :hw-address (th/byte-vec [1 2 3 4 5 6])
                      :ip-address (th/byte-vec [192 168 0 1])
@@ -295,45 +296,45 @@
                      :offered-at now2
                      :leased-at nil
                      :expired-at now2}]
-                   (th/array->vec-recursively (sut/get-all-leases db))))))
+                   (th/array->vec-recursively (p.db/get-all-leases db))))))
         (testing "throw exception when adding invalid lease"
           (testing "empty hw-address"
             (is (thrown? IllegalArgumentException
-                  (sut/add-lease db {})))))))
+                  (p.db/add-lease db {})))))))
     (testing "find-tests"
       (let [db (sut/create-database "memory")
             now (Instant/now)]
-        (sut/add-lease db {:client-id (byte-array [1 2 3 4 5 6])
-                           :hw-address (byte-array [1 2 3 4 5 6])
-                           :ip-address (byte-array [192 168 0 1])
-                           :hostname "host1"
-                           :lease-time 86400
-                           :status "lease"
-                           :offered-at now
-                           :leased-at now
-                           :expired-at now})
-        (sut/add-lease db {:client-id (byte-array [10 20 30])
-                           :hw-address (byte-array [10 20 30])
-                           :ip-address (byte-array [172 16 0 19])
-                           :hostname "host2"
-                           :lease-time 3600
-                           :status "offer"
-                           :offered-at now
-                           :leased-at nil
-                           :expired-at now})
-        (sut/add-lease db {:client-id (byte-array [40 50 60])
-                           :hw-address (byte-array [40 50 60])
-                           :ip-address (byte-array [172 16 0 58])
-                           :hostname "tablet10"
-                           :lease-time 7200
-                           :status "offer"
-                           :offered-at now
-                           :leased-at nil
-                           :expired-at now})
+        (p.db/add-lease db {:client-id (byte-array [1 2 3 4 5 6])
+                            :hw-address (byte-array [1 2 3 4 5 6])
+                            :ip-address (byte-array [192 168 0 1])
+                            :hostname "host1"
+                            :lease-time 86400
+                            :status "lease"
+                            :offered-at now
+                            :leased-at now
+                            :expired-at now})
+        (p.db/add-lease db {:client-id (byte-array [10 20 30])
+                            :hw-address (byte-array [10 20 30])
+                            :ip-address (byte-array [172 16 0 19])
+                            :hostname "host2"
+                            :lease-time 3600
+                            :status "offer"
+                            :offered-at now
+                            :leased-at nil
+                            :expired-at now})
+        (p.db/add-lease db {:client-id (byte-array [40 50 60])
+                            :hw-address (byte-array [40 50 60])
+                            :ip-address (byte-array [172 16 0 58])
+                            :hostname "tablet10"
+                            :lease-time 7200
+                            :status "offer"
+                            :offered-at now
+                            :leased-at nil
+                            :expired-at now})
         (testing "find-leases-by-hw-address-test"
           (testing "hit no entry"
             (is (= []
-                   (sut/find-leases-by-hw-address db (byte-array [10 20 30 40 50 60])))))
+                   (p.db/find-leases-by-hw-address db (byte-array [10 20 30 40 50 60])))))
           (testing "hit 1 entry"
             (is (= [{:client-id (th/byte-vec [10 20 30])
                      :hw-address (th/byte-vec [10 20 30])
@@ -345,11 +346,11 @@
                      :leased-at nil
                      :expired-at now}]
                    (th/array->vec-recursively
-                    (sut/find-leases-by-hw-address db (byte-array [10 20 30])))))))
+                    (p.db/find-leases-by-hw-address db (byte-array [10 20 30])))))))
         (testing "find-leases-by-ip-address-range-test"
           (testing "hit no entry"
             (is (= []
-                   (sut/find-leases-by-ip-address-range
+                   (p.db/find-leases-by-ip-address-range
                     db (byte-array [127 0 0 0]) (byte-array [127 255 255 255])))))
           (testing "hit 1 entry"
             (is (= [{:client-id (th/byte-vec [1 2 3 4 5 6])
@@ -362,7 +363,7 @@
                      :leased-at now
                      :expired-at now}]
                    (th/array->vec-recursively
-                    (sut/find-leases-by-ip-address-range
+                    (p.db/find-leases-by-ip-address-range
                      db (byte-array [192 168 0 0]) (byte-array [192 168 0 255]))))))
           (testing "hit 2 entry"
             (is (= [{:client-id (th/byte-vec [10 20 30])
@@ -384,7 +385,7 @@
                      :leased-at nil
                      :expired-at now}]
                    (th/array->vec-recursively
-                    (sut/find-leases-by-ip-address-range
+                    (p.db/find-leases-by-ip-address-range
                      db (byte-array [172 16 0 0]) (byte-array [172 16 15 255]))))))
           (testing "start and end are inclusive"
             (is (= [{:client-id (th/byte-vec [1 2 3 4 5 6])
@@ -406,7 +407,7 @@
                      :leased-at nil
                      :expired-at now}]
                    (th/array->vec-recursively
-                    (sut/find-leases-by-ip-address-range
+                    (p.db/find-leases-by-ip-address-range
                      db (byte-array [172 16 0 58]) (byte-array [192 168 0 1])))))))))
     (testing "update-lease-test"
              ;; TODO
@@ -414,49 +415,49 @@
     (testing "delete-lease-tests"
       (let [db (sut/create-database "memory")
             now (Instant/now)]
-        (sut/add-lease db {:client-id (byte-array [1 2 3 4 5 6])
-                           :hw-address (byte-array [1 2 3 4 5 6])
-                           :ip-address (byte-array [192 168 0 1])
-                           :hostname "host1"
-                           :lease-time 86400
-                           :status "lease"
-                           :offered-at now
-                           :leased-at now
-                           :expired-at now})
-        (sut/add-lease db {:client-id (byte-array [1 2 3 4 5 6])
-                           :hw-address (byte-array [1 2 3 4 5 6])
-                           :ip-address (byte-array [192 168 0 2])
-                           :hostname "host1 (2)"
-                           :lease-time 86400
-                           :status "lease"
-                           :offered-at now
-                           :leased-at now
-                           :expired-at now})
-        (sut/add-lease db {:client-id (byte-array [10 20 30])
-                           :hw-address (byte-array [10 20 30])
-                           :ip-address (byte-array [172 16 0 19])
-                           :hostname "host2"
-                           :lease-time 3600
-                           :status "offer"
-                           :offered-at now
-                           :leased-at nil
-                           :expired-at now})
-        (sut/add-lease db {:client-id (byte-array [40 50 60])
-                           :hw-address (byte-array [40 50 60])
-                           :ip-address (byte-array [172 16 0 58])
-                           :hostname "tablet10"
-                           :lease-time 7200
-                           :status "offer"
-                           :offered-at now
-                           :leased-at nil
-                           :expired-at now})
+        (p.db/add-lease db {:client-id (byte-array [1 2 3 4 5 6])
+                            :hw-address (byte-array [1 2 3 4 5 6])
+                            :ip-address (byte-array [192 168 0 1])
+                            :hostname "host1"
+                            :lease-time 86400
+                            :status "lease"
+                            :offered-at now
+                            :leased-at now
+                            :expired-at now})
+        (p.db/add-lease db {:client-id (byte-array [1 2 3 4 5 6])
+                            :hw-address (byte-array [1 2 3 4 5 6])
+                            :ip-address (byte-array [192 168 0 2])
+                            :hostname "host1 (2)"
+                            :lease-time 86400
+                            :status "lease"
+                            :offered-at now
+                            :leased-at now
+                            :expired-at now})
+        (p.db/add-lease db {:client-id (byte-array [10 20 30])
+                            :hw-address (byte-array [10 20 30])
+                            :ip-address (byte-array [172 16 0 19])
+                            :hostname "host2"
+                            :lease-time 3600
+                            :status "offer"
+                            :offered-at now
+                            :leased-at nil
+                            :expired-at now})
+        (p.db/add-lease db {:client-id (byte-array [40 50 60])
+                            :hw-address (byte-array [40 50 60])
+                            :ip-address (byte-array [172 16 0 58])
+                            :hostname "tablet10"
+                            :lease-time 7200
+                            :status "offer"
+                            :offered-at now
+                            :leased-at nil
+                            :expired-at now})
         (testing "delete no entry"
-          (sut/delete-lease
+          (p.db/delete-lease
            db (byte-array [10 20 30 40 50 60]) (byte-array [192 168 0 1]) (byte-array [192 168 0 255]))
           (is (= 4
-                 (count (sut/get-all-leases db)))))
+                 (count (p.db/get-all-leases db)))))
         (testing "delete 1 entry"
-          (sut/delete-lease
+          (p.db/delete-lease
            db (byte-array [10 20 30]) (byte-array [172 16 0 0]) (byte-array [172 16 0 255]))
           (is (= [{:client-id (th/byte-vec [1 2 3 4 5 6])
                    :hw-address (th/byte-vec [1 2 3 4 5 6])
@@ -485,9 +486,9 @@
                    :offered-at now
                    :leased-at nil
                    :expired-at now}]
-                 (th/array->vec-recursively (sut/get-all-leases db)))))
+                 (th/array->vec-recursively (p.db/get-all-leases db)))))
         (testing "delete 2 entry"
-          (sut/delete-lease
+          (p.db/delete-lease
            db (byte-array [1 2 3 4 5 6]) (byte-array [192 168 0 1]) (byte-array [192 168 0 255]))
           (is (= [{:client-id (th/byte-vec [40 50 60])
                    :hw-address (th/byte-vec [40 50 60])
@@ -498,4 +499,4 @@
                    :offered-at now
                    :leased-at nil
                    :expired-at now}]
-                 (th/array->vec-recursively (sut/get-all-leases db)))))))))
+                 (th/array->vec-recursively (p.db/get-all-leases db)))))))))

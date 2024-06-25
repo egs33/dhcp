@@ -3,12 +3,13 @@
    [clojure.tools.logging :as log]
    [dhcp.components.socket]
    [dhcp.const.dhcp-type :refer [DHCPDECLINE]]
-   [dhcp.handler :as h])
+   [dhcp.handler :as h]
+   [dhcp.protocol.database])
   (:import
-   (dhcp.components.database
-    IDatabase)
    (dhcp.components.socket
     ISocket)
+   (dhcp.protocol.database
+    IDatabase)
    (dhcp.records.config
     Config)
    (dhcp.records.dhcp_packet

@@ -3,6 +3,7 @@
    [clojure.test :refer [deftest testing is]]
    [dhcp.components.database :as c.database]
    [dhcp.core.lease :as sut]
+   [dhcp.protocol.database :as p.db]
    [dhcp.records.ip-address :as r.ip-address]
    [dhcp.test-helper :as th])
   (:import
@@ -23,9 +24,9 @@
   (testing "reserved hw-address"
     (testing "no lease"
       (let [db (c.database/create-database "memory")
-            _ (c.database/add-reservations db [{:hw-address (byte-array [0 1 2 3 4 5])
-                                                :ip-address (byte-array [192 168 0 50])
-                                                :source "config"}])]
+            _ (p.db/add-reservations db [{:hw-address (byte-array [0 1 2 3 4 5])
+                                          :ip-address (byte-array [192 168 0 50])
+                                          :source "config"}])]
         (is (= {:pool (th/array->vec-recursively (first (:pools sample-subnet)))
                 :ip-address (th/byte-vec [192 168 0 50])
                 :status :new
@@ -36,18 +37,18 @@
                                                                  (byte-array [0 0 0 0])))))))
     (testing "already leased by same host"
       (let [db (c.database/create-database "memory")
-            _ (c.database/add-reservations db [{:hw-address (byte-array [0 1 2 3 4 5])
-                                                :ip-address (byte-array [192 168 0 50])
-                                                :source "config"}])
-            _ (c.database/add-lease db {:client-id (byte-array [0 1 2 3 4 5])
-                                        :hw-address (byte-array [0 1 2 3 4 5])
-                                        :ip-address (byte-array [192 168 0 50])
-                                        :hostname "reserved-host"
-                                        :lease-time 86400
-                                        :status "lease"
-                                        :offered-at (Instant/now)
-                                        :leased-at (Instant/now)
-                                        :expired-at (.plusSeconds (Instant/now) 40000)})]
+            _ (p.db/add-reservations db [{:hw-address (byte-array [0 1 2 3 4 5])
+                                          :ip-address (byte-array [192 168 0 50])
+                                          :source "config"}])
+            _ (p.db/add-lease db {:client-id (byte-array [0 1 2 3 4 5])
+                                  :hw-address (byte-array [0 1 2 3 4 5])
+                                  :ip-address (byte-array [192 168 0 50])
+                                  :hostname "reserved-host"
+                                  :lease-time 86400
+                                  :status "lease"
+                                  :offered-at (Instant/now)
+                                  :leased-at (Instant/now)
+                                  :expired-at (.plusSeconds (Instant/now) 40000)})]
         (is (= {:pool (th/array->vec-recursively (first (:pools sample-subnet)))
                 :ip-address (th/byte-vec [192 168 0 50])
                 :status :leasing
@@ -58,18 +59,18 @@
                                                                  (byte-array [0 0 0 0])))))))
     (testing "already leased by same host but expired"
       (let [db (c.database/create-database "memory")
-            _ (c.database/add-reservations db [{:hw-address (byte-array [0 1 2 3 4 5])
-                                                :ip-address (byte-array [192 168 0 50])
-                                                :source "config"}])
-            _ (c.database/add-lease db {:client-id (byte-array [0 1 2 3 4 5])
-                                        :hw-address (byte-array [0 1 2 3 4 5])
-                                        :ip-address (byte-array [192 168 0 50])
-                                        :hostname "reserved-host"
-                                        :lease-time 86400
-                                        :status "lease"
-                                        :offered-at (Instant/now)
-                                        :leased-at (Instant/now)
-                                        :expired-at (.minusSeconds (Instant/now) 1)})]
+            _ (p.db/add-reservations db [{:hw-address (byte-array [0 1 2 3 4 5])
+                                          :ip-address (byte-array [192 168 0 50])
+                                          :source "config"}])
+            _ (p.db/add-lease db {:client-id (byte-array [0 1 2 3 4 5])
+                                  :hw-address (byte-array [0 1 2 3 4 5])
+                                  :ip-address (byte-array [192 168 0 50])
+                                  :hostname "reserved-host"
+                                  :lease-time 86400
+                                  :status "lease"
+                                  :offered-at (Instant/now)
+                                  :leased-at (Instant/now)
+                                  :expired-at (.minusSeconds (Instant/now) 1)})]
         (is (= {:pool (th/array->vec-recursively (first (:pools sample-subnet)))
                 :ip-address (th/byte-vec [192 168 0 50])
                 :status :new
@@ -80,18 +81,18 @@
                                                                  (byte-array [0 0 0 0])))))))
     (testing "already leased by other host"
       (let [db (c.database/create-database "memory")
-            _ (c.database/add-reservations db [{:hw-address (byte-array [0 1 2 3 4 5])
-                                                :ip-address (byte-array [192 168 0 50])
-                                                :source "config"}])
-            _ (c.database/add-lease db {:client-id (byte-array [0 1 2 3 4 5])
-                                        :hw-address (byte-array [0 11 22 33 44 55])
-                                        :ip-address (byte-array [192 168 0 50])
-                                        :hostname "reserved-host"
-                                        :lease-time 86400
-                                        :status "lease"
-                                        :offered-at (Instant/now)
-                                        :leased-at (Instant/now)
-                                        :expired-at (.plusSeconds (Instant/now) 40000)})]
+            _ (p.db/add-reservations db [{:hw-address (byte-array [0 1 2 3 4 5])
+                                          :ip-address (byte-array [192 168 0 50])
+                                          :source "config"}])
+            _ (p.db/add-lease db {:client-id (byte-array [0 1 2 3 4 5])
+                                  :hw-address (byte-array [0 11 22 33 44 55])
+                                  :ip-address (byte-array [192 168 0 50])
+                                  :hostname "reserved-host"
+                                  :lease-time 86400
+                                  :status "lease"
+                                  :offered-at (Instant/now)
+                                  :leased-at (Instant/now)
+                                  :expired-at (.plusSeconds (Instant/now) 40000)})]
         (is (= {:pool (th/array->vec-recursively (first (:pools sample-subnet)))
                 :ip-address (th/byte-vec [192 168 0 1])
                 :status :new
@@ -102,15 +103,15 @@
                                                                  nil)))))))
   (testing "not reserved, already leased and active"
     (let [db (c.database/create-database "memory")
-          _ (c.database/add-lease db {:client-id (byte-array [0 1 2 3 4 5])
-                                      :hw-address (byte-array [0 1 2 3 4 5])
-                                      :ip-address (byte-array [192 168 0 50])
-                                      :hostname "reserved-host"
-                                      :lease-time 86400
-                                      :status "lease"
-                                      :offered-at (Instant/now)
-                                      :leased-at (Instant/now)
-                                      :expired-at (.plusSeconds (Instant/now) 40000)})]
+          _ (p.db/add-lease db {:client-id (byte-array [0 1 2 3 4 5])
+                                :hw-address (byte-array [0 1 2 3 4 5])
+                                :ip-address (byte-array [192 168 0 50])
+                                :hostname "reserved-host"
+                                :lease-time 86400
+                                :status "lease"
+                                :offered-at (Instant/now)
+                                :leased-at (Instant/now)
+                                :expired-at (.plusSeconds (Instant/now) 40000)})]
       (is (= {:pool (th/array->vec-recursively (first (:pools sample-subnet)))
               :ip-address (th/byte-vec [192 168 0 50])
               :status :leasing
@@ -121,15 +122,15 @@
                                                                (byte-array [0 0 0 0])))))))
   (testing "not reserved, lease expired and not used by other host"
     (let [db (c.database/create-database "memory")
-          _ (c.database/add-lease db {:client-id (byte-array [0 1 2 3 4 5])
-                                      :hw-address (byte-array [0 1 2 3 4 5])
-                                      :ip-address (byte-array [192 168 0 50])
-                                      :hostname "reserved-host"
-                                      :lease-time 86400
-                                      :status "lease"
-                                      :offered-at (Instant/now)
-                                      :leased-at (Instant/now)
-                                      :expired-at (.minusSeconds (Instant/now) 1)})]
+          _ (p.db/add-lease db {:client-id (byte-array [0 1 2 3 4 5])
+                                :hw-address (byte-array [0 1 2 3 4 5])
+                                :ip-address (byte-array [192 168 0 50])
+                                :hostname "reserved-host"
+                                :lease-time 86400
+                                :status "lease"
+                                :offered-at (Instant/now)
+                                :leased-at (Instant/now)
+                                :expired-at (.minusSeconds (Instant/now) 1)})]
       (is (= {:pool (th/array->vec-recursively (first (:pools sample-subnet)))
               :ip-address (th/byte-vec [192 168 0 50])
               :status :new
@@ -152,15 +153,15 @@
                                                                    (byte-array [192 168 0 50])))))))
       (testing "unavailable"
         (let [db (c.database/create-database "memory")]
-          (c.database/add-lease db {:client-id (byte-array [0 11 22 33 44 55])
-                                    :hw-address (byte-array [0 11 22 33 44 55])
-                                    :ip-address (byte-array [192 168 0 50])
-                                    :hostname "reserved-host"
-                                    :lease-time 86400
-                                    :status "lease"
-                                    :offered-at (Instant/now)
-                                    :leased-at (Instant/now)
-                                    :expired-at (.plusSeconds (Instant/now) 2)})
+          (p.db/add-lease db {:client-id (byte-array [0 11 22 33 44 55])
+                              :hw-address (byte-array [0 11 22 33 44 55])
+                              :ip-address (byte-array [192 168 0 50])
+                              :hostname "reserved-host"
+                              :lease-time 86400
+                              :status "lease"
+                              :offered-at (Instant/now)
+                              :leased-at (Instant/now)
+                              :expired-at (.plusSeconds (Instant/now) 2)})
           (is (= {:pool (th/array->vec-recursively (first (:pools sample-subnet)))
                   :ip-address (th/byte-vec [192 168 0 1])
                   :status :new
@@ -193,15 +194,15 @@
       (testing "some addresses leased"
         (let [db (c.database/create-database "memory")]
           (doseq [i (range 100)]
-            (c.database/add-lease db {:client-id (byte-array [i 11 22 33 44 55])
-                                      :hw-address (byte-array [i 11 22 33 44 55])
-                                      :ip-address (byte-array [192 168 0 i])
-                                      :hostname (str "reserved-host" i)
-                                      :lease-time 86400
-                                      :status "lease"
-                                      :offered-at (Instant/now)
-                                      :leased-at (Instant/now)
-                                      :expired-at (.plusSeconds (Instant/now) 2)}))
+            (p.db/add-lease db {:client-id (byte-array [i 11 22 33 44 55])
+                                :hw-address (byte-array [i 11 22 33 44 55])
+                                :ip-address (byte-array [192 168 0 i])
+                                :hostname (str "reserved-host" i)
+                                :lease-time 86400
+                                :status "lease"
+                                :offered-at (Instant/now)
+                                :leased-at (Instant/now)
+                                :expired-at (.plusSeconds (Instant/now) 2)}))
           (is (= {:pool (th/array->vec-recursively (first (:pools sample-subnet)))
                   :ip-address (th/byte-vec [192 168 0 100])
                   :status :new
@@ -213,15 +214,15 @@
       (testing "pool is full"
         (let [db (c.database/create-database "memory")]
           (doseq [i (range 256)]
-            (c.database/add-lease db {:client-id (byte-array [i 11 22 33 44 55])
-                                      :hw-address (byte-array [i 11 22 33 44 55])
-                                      :ip-address (byte-array [192 168 0 i])
-                                      :hostname (str "reserved-host" i)
-                                      :lease-time 86400
-                                      :status "lease"
-                                      :offered-at (Instant/now)
-                                      :leased-at (Instant/now)
-                                      :expired-at (.plusSeconds (Instant/now) 2)}))
+            (p.db/add-lease db {:client-id (byte-array [i 11 22 33 44 55])
+                                :hw-address (byte-array [i 11 22 33 44 55])
+                                :ip-address (byte-array [192 168 0 i])
+                                :hostname (str "reserved-host" i)
+                                :lease-time 86400
+                                :status "lease"
+                                :offered-at (Instant/now)
+                                :leased-at (Instant/now)
+                                :expired-at (.plusSeconds (Instant/now) 2)}))
           (is (nil? (sut/choose-ip-address sample-subnet
                                            db
                                            (byte-array [0 1 2 3 4 5])
@@ -249,25 +250,25 @@
                                :reservation []
                                :options []}]}]
           (doseq [i (range 1 11)]
-            (c.database/add-lease db {:client-id (byte-array [i 11 22 33 44 55])
-                                      :hw-address (byte-array [i 11 22 33 44 55])
-                                      :ip-address (byte-array [192 168 0 i])
-                                      :hostname (str "reserved-host" i)
-                                      :lease-time 86400
-                                      :status "lease"
-                                      :offered-at (Instant/now)
-                                      :leased-at (Instant/now)
-                                      :expired-at (.plusSeconds (Instant/now) 2)}))
+            (p.db/add-lease db {:client-id (byte-array [i 11 22 33 44 55])
+                                :hw-address (byte-array [i 11 22 33 44 55])
+                                :ip-address (byte-array [192 168 0 i])
+                                :hostname (str "reserved-host" i)
+                                :lease-time 86400
+                                :status "lease"
+                                :offered-at (Instant/now)
+                                :leased-at (Instant/now)
+                                :expired-at (.plusSeconds (Instant/now) 2)}))
           (doseq [i (range 21 25)]
-            (c.database/add-lease db {:client-id (byte-array [i 11 22 33 44 55])
-                                      :hw-address (byte-array [i 11 22 33 44 55])
-                                      :ip-address (byte-array [192 168 0 i])
-                                      :hostname (str "reserved-host" i)
-                                      :lease-time 86400
-                                      :status "lease"
-                                      :offered-at (Instant/now)
-                                      :leased-at (Instant/now)
-                                      :expired-at (.plusSeconds (Instant/now) 2)}))
+            (p.db/add-lease db {:client-id (byte-array [i 11 22 33 44 55])
+                                :hw-address (byte-array [i 11 22 33 44 55])
+                                :ip-address (byte-array [192 168 0 i])
+                                :hostname (str "reserved-host" i)
+                                :lease-time 86400
+                                :status "lease"
+                                :offered-at (Instant/now)
+                                :leased-at (Instant/now)
+                                :expired-at (.plusSeconds (Instant/now) 2)}))
           (is (= {:pool (th/array->vec-recursively (nth (:pools subnet) 2))
                   :ip-address (th/byte-vec [192 168 0 25])
                   :status :new

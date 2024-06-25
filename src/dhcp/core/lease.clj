@@ -1,10 +1,10 @@
 (ns dhcp.core.lease
   (:require
-   [dhcp.components.database :as c.database]
+   [dhcp.protocol.database :as p.db]
    [dhcp.records.ip-address :as r.ip-address]
    [dhcp.util.bytes :as u.bytes])
   (:import
-   (dhcp.components.database
+   (dhcp.protocol.database
     IDatabase)
    (java.time
     Instant)
@@ -38,10 +38,10 @@
    ^bytes hw-address
    ^bytes requested-addr                                    ; nilable
    ]
-  (let [rp (select-reservation-and-pool subnet (c.database/find-reservations-by-hw-address db hw-address))
+  (let [rp (select-reservation-and-pool subnet (p.db/find-reservations-by-hw-address db hw-address))
         reservation-addr (get-in rp [:reservation :ip-address])
         current-lease (when reservation-addr
-                        (first (c.database/find-leases-by-ip-address-range db reservation-addr reservation-addr)))]
+                        (first (p.db/find-leases-by-ip-address-range db reservation-addr reservation-addr)))]
     (if (and rp
              (or (nil? current-lease)
                  ;; TODO: consider client-identifier
@@ -57,7 +57,7 @@
            :ip-address reservation-addr
            :status :new
            :lease-time (get-in rp [:pool :lease-time])}))
-      (let [host-lease (->> (c.database/find-leases-by-hw-address db hw-address)
+      (let [host-lease (->> (p.db/find-leases-by-hw-address db hw-address)
                             (filter #(<= (r.ip-address/->int (:start-address subnet))
                                          (u.bytes/bytes->number (:ip-address %))
                                          (r.ip-address/->int (:end-address subnet))))
@@ -72,7 +72,7 @@
 
           ;; lease is expired and not used by other host
           (and host-lease
-               (->> (c.database/find-leases-by-ip-address-range
+               (->> (p.db/find-leases-by-ip-address-range
                      db (:ip-address host-lease) (:ip-address host-lease))
                     (some #(and (.isBefore (Instant/now) (:expired-at %))
                                 (not (u.bytes/equal? hw-address (:hw-address %)))))
@@ -88,7 +88,7 @@
                                           (select-pool-by-ip-address subnet requested-addr))]
             (if (and pool-for-requested-addr
                      (not (:only-reserved-lease pool-for-requested-addr))
-                     (->> (c.database/find-leases-by-ip-address-range
+                     (->> (p.db/find-leases-by-ip-address-range
                            db requested-addr requested-addr)
                           (filter #(.isBefore (Instant/now) (:expired-at %)))
                           empty?))
@@ -97,7 +97,7 @@
                  :ip-address requested-addr
                  :status :new
                  :lease-time (:lease-time pool)})
-              (let [current-leases-ips (->> (c.database/find-leases-by-ip-address-range
+              (let [current-leases-ips (->> (p.db/find-leases-by-ip-address-range
                                              db (r.ip-address/->byte-array (:start-address subnet))
                                              (r.ip-address/->byte-array (:end-address subnet)))
                                             (map (comp u.bytes/bytes->number :ip-address))

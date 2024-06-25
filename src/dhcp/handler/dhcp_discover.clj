@@ -1,21 +1,21 @@
 (ns dhcp.handler.dhcp-discover
   (:require
    [clojure.tools.logging :as log]
-   [dhcp.components.database :as c.database]
    [dhcp.components.socket]
    [dhcp.const.dhcp-type :refer [DHCPDISCOVER DHCPOFFER]]
    [dhcp.core.lease :as core.lease]
    [dhcp.core.packet :as core.packet]
    [dhcp.handler :as h]
+   [dhcp.protocol.database :as p.db]
    [dhcp.records.config :as r.config]
    [dhcp.records.dhcp-message :as r.dhcp-message]
    [dhcp.records.ip-address :as r.ip-address]
    [dhcp.util.bytes :as u.bytes])
   (:import
-   (dhcp.components.database
-    IDatabase)
    (dhcp.components.socket
     ISocket)
+   (dhcp.protocol.database
+    IDatabase)
    (dhcp.records.config
     Config)
    (dhcp.records.dhcp_packet
@@ -56,20 +56,20 @@
                            lease-time-opt (min lease-time-opt))
               now (Instant/now)
               _ (when (= status :new)
-                  (c.database/delete-lease db
-                                           (:chaddr message)
-                                           (r.ip-address/->byte-array (:start-address subnet))
-                                           (r.ip-address/->byte-array (:end-address subnet)))
-                  (c.database/add-lease db {:client-id (byte-array client-id)
-                                            :hw-address (byte-array (:chaddr message))
-                                            :ip-address ip-address
-                                            :hostname (bytes->str (r.dhcp-message/get-option
-                                                                   message 12))
-                                            :lease-time lease-time
-                                            :status "offer"
-                                            :offered-at now
-                                            :leased-at nil
-                                            :expired-at (.plusSeconds now lease-time)}))
+                  (p.db/delete-lease db
+                                     (:chaddr message)
+                                     (r.ip-address/->byte-array (:start-address subnet))
+                                     (r.ip-address/->byte-array (:end-address subnet)))
+                  (p.db/add-lease db {:client-id (byte-array client-id)
+                                      :hw-address (byte-array (:chaddr message))
+                                      :ip-address ip-address
+                                      :hostname (bytes->str (r.dhcp-message/get-option
+                                                             message 12))
+                                      :lease-time lease-time
+                                      :status "offer"
+                                      :offered-at now
+                                      :leased-at nil
+                                      :expired-at (.plusSeconds now lease-time)}))
               options-by-code (reduce #(assoc %1 (:code %2) %2) {} (:options pool))
               requested-params (->> (r.dhcp-message/get-option message 55)
                                     (map #(Byte/toUnsignedInt %))

@@ -8,12 +8,13 @@
    [dhcp.handler.dhcp-discover]
    [dhcp.handler.dhcp-release]
    [dhcp.handler.dhcp-request]
+   [dhcp.protocol.database]
    [dhcp.records.config])
   (:import
-   (dhcp.components.database
-    IDatabase)
    (dhcp.components.socket
     ISocket)
+   (dhcp.protocol.database
+    IDatabase)
    (dhcp.records.config
     Config)
    (dhcp.records.dhcp_packet

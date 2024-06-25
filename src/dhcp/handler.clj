@@ -2,14 +2,15 @@
   (:require
    [clojure.tools.logging :as log]
    [dhcp.components.socket]
+   [dhcp.protocol.database :as p.db]
    [dhcp.records.config]
    [dhcp.records.dhcp-message :as r.dhcp-message]
    [dhcp.records.dhcp-packet])
   (:import
-   (dhcp.components.database
-    IDatabase)
    (dhcp.components.socket
     ISocket)
+   (dhcp.protocol.database
+    IDatabase)
    (dhcp.records.config
     Config)
    (dhcp.records.dhcp_packet

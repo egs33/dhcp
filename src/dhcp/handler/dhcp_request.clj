@@ -1,21 +1,21 @@
 (ns dhcp.handler.dhcp-request
   (:require
    [clojure.tools.logging :as log]
-   [dhcp.components.database :as c.database]
    [dhcp.components.socket]
    [dhcp.const.dhcp-type :refer [DHCPREQUEST DHCPACK DHCPNAK]]
    [dhcp.core.lease :as core.lease]
    [dhcp.core.packet :as core.packet]
    [dhcp.handler :as h]
+   [dhcp.protocol.database :as p.db]
    [dhcp.records.config :as r.config]
    [dhcp.records.dhcp-message :as r.dhcp-message]
    [dhcp.records.ip-address :as r.ip-address]
    [dhcp.util.bytes :as u.bytes])
   (:import
-   (dhcp.components.database
-    IDatabase)
    (dhcp.components.socket
     ISocket)
+   (dhcp.protocol.database
+    IDatabase)
    (dhcp.records.config
     Config)
    (dhcp.records.dhcp_packet
@@ -65,7 +65,7 @@
                      requested
                      (r.ip-address/->int (:end-address subnet)))))
       (log/debug "DHCPREQUEST received, but not for this server")
-      (let [leases (->> (c.database/find-leases-by-hw-address db (:chaddr message))
+      (let [leases (->> (p.db/find-leases-by-hw-address db (:chaddr message))
                         (filter #(and (= requested (u.bytes/bytes->number (:ip-address %)))
                                       (.isBefore (Instant/now) (:expired-at %)))))]
         (if (empty? leases)
@@ -74,12 +74,12 @@
             (core.packet/send-packet socket message reply))
           (let [req-ip-bytes (byte-array (u.bytes/number->byte-coll requested 4))
                 pool (core.lease/select-pool-by-ip-address subnet req-ip-bytes)
-                _ (c.database/update-lease db
-                                           (:chaddr message)
-                                           req-ip-bytes
-                                           {:status "lease"
-                                            :leased-at (now)
-                                            :expired-at (.plusSeconds (now) (:lease-time pool))})
+                _ (p.db/update-lease db
+                                     (:chaddr message)
+                                     req-ip-bytes
+                                     {:status "lease"
+                                      :leased-at (now)
+                                      :expired-at (.plusSeconds (now) (:lease-time pool))})
                 _ (log/debugf "DHCPREQUEST lease updated %s" (u.bytes/->str (byte-array (:chaddr message))))
                 options-by-code (reduce #(assoc %1 (:code %2) %2) {} (:options pool))
                 requested-params (->> (r.dhcp-message/get-option message 55)
@@ -131,7 +131,7 @@
             _ (log/debug "DHCPREQUEST received, but invalid subnet or requested address")
             reply (create-dhcp-nak message l-addr)]
         (core.packet/send-packet socket message reply))
-      (let [leases (->> (c.database/find-leases-by-hw-address db (:chaddr message))
+      (let [leases (->> (p.db/find-leases-by-hw-address db (:chaddr message))
                         (filter #(and (.isBefore (Instant/now) (:expired-at %))
                                       (= (:status %) "lease"))))]
         (if (empty? leases)
@@ -185,7 +185,7 @@
         lease-time-opt (some-> (r.dhcp-message/get-option message 51)
                                byte-array
                                u.bytes/bytes->number)
-        leases (->> (c.database/find-leases-by-hw-address db ciaddr)
+        leases (->> (p.db/find-leases-by-hw-address db ciaddr)
                     (filter #(and (.isBefore (Instant/now) (:expired-at %))
                                   (= (:status %) "lease"))))]
     (if (empty? leases)
@@ -202,10 +202,10 @@
                            (.until (now) ChronoUnit/SECONDS)
                            (+ lease-time))
             lease-time (max lease-time 600)
-            _ (c.database/update-lease db
-                                       (:chaddr message)
-                                       (r.ip-address/->bytes ciaddr)
-                                       {:expired-at (.plusSeconds (now) lease-time)})
+            _ (p.db/update-lease db
+                                 (:chaddr message)
+                                 (r.ip-address/->bytes ciaddr)
+                                 {:expired-at (.plusSeconds (now) lease-time)})
             _ (log/debugf "DHCPREQUEST lease updated %s" (u.bytes/->str (byte-array (:chaddr message))))
             options-by-code (reduce #(assoc %1 (:code %2) %2) {} (:options pool))
             requested-params (->> (r.dhcp-message/get-option message 55)

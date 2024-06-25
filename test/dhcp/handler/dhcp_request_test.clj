@@ -7,6 +7,7 @@
    [dhcp.core.packet :as core.packet]
    [dhcp.handler :as h]
    [dhcp.handler.dhcp-request]
+   [dhcp.protocol.database :as p.db]
    [dhcp.records.config :as r.config]
    [dhcp.records.dhcp-message :as r.dhcp-message]
    [dhcp.records.dhcp-packet :as r.packet]
@@ -100,7 +101,7 @@
       (testing "offering record not found"
         (testing "no record"
           (let [packet-to-send (atom nil)]
-            (with-redefs [c.database/find-leases-by-hw-address (constantly [])
+            (with-redefs [p.db/find-leases-by-hw-address (constantly [])
                           core.packet/send-packet (fn [_ _ reply] (reset! packet-to-send reply) nil)]
               (is (nil? (h/handler th/socket-mock db config sample-packet)))
               (is (= (r.dhcp-message/map->DhcpMessage {:op :BOOTREPLY
@@ -123,24 +124,24 @@
                      @packet-to-send)))))
         (testing "other address only"
           (let [packet-to-send (atom nil)]
-            (with-redefs [c.database/find-leases-by-hw-address (constantly [{:client-id (byte-array [1 11 22 33 44 55])
-                                                                             :hw-address (byte-array [11 22 33 44 55 66])
-                                                                             :ip-address (byte-array [192 168 0 101])
-                                                                             :hostname "host1"
-                                                                             :lease-time 86400
-                                                                             :status "offer"
-                                                                             :offered-at (Instant/now)
-                                                                             :leased-at (Instant/now)
-                                                                             :expired-at (.plusSeconds (Instant/now) 2)}
-                                                                            {:client-id (byte-array [1 11 22 33 44 55])
-                                                                             :hw-address (byte-array [11 22 33 44 55 66])
-                                                                             :ip-address (byte-array [172 16 0 100])
-                                                                             :hostname "host1"
-                                                                             :lease-time 86400
-                                                                             :status "offer"
-                                                                             :offered-at (Instant/now)
-                                                                             :leased-at (Instant/now)
-                                                                             :expired-at (.plusSeconds (Instant/now) 2)}])
+            (with-redefs [p.db/find-leases-by-hw-address (constantly [{:client-id (byte-array [1 11 22 33 44 55])
+                                                                       :hw-address (byte-array [11 22 33 44 55 66])
+                                                                       :ip-address (byte-array [192 168 0 101])
+                                                                       :hostname "host1"
+                                                                       :lease-time 86400
+                                                                       :status "offer"
+                                                                       :offered-at (Instant/now)
+                                                                       :leased-at (Instant/now)
+                                                                       :expired-at (.plusSeconds (Instant/now) 2)}
+                                                                      {:client-id (byte-array [1 11 22 33 44 55])
+                                                                       :hw-address (byte-array [11 22 33 44 55 66])
+                                                                       :ip-address (byte-array [172 16 0 100])
+                                                                       :hostname "host1"
+                                                                       :lease-time 86400
+                                                                       :status "offer"
+                                                                       :offered-at (Instant/now)
+                                                                       :leased-at (Instant/now)
+                                                                       :expired-at (.plusSeconds (Instant/now) 2)}])
                           core.packet/send-packet (fn [_ _ reply] (reset! packet-to-send reply) nil)]
               (is (nil? (h/handler th/socket-mock db config sample-packet)))
               (is (= (r.dhcp-message/map->DhcpMessage {:op :BOOTREPLY
@@ -163,15 +164,15 @@
                      @packet-to-send)))))
         (testing "lease record expired"
           (let [packet-to-send (atom nil)]
-            (with-redefs [c.database/find-leases-by-hw-address (constantly [{:client-id (byte-array [1 11 22 33 44 55])
-                                                                             :hw-address (byte-array [11 22 33 44 55 66])
-                                                                             :ip-address (byte-array [192 168 0 100])
-                                                                             :hostname "host1"
-                                                                             :lease-time 86400
-                                                                             :status "offer"
-                                                                             :offered-at (Instant/now)
-                                                                             :leased-at (Instant/now)
-                                                                             :expired-at (.minusSeconds (Instant/now) 86401)}])
+            (with-redefs [p.db/find-leases-by-hw-address (constantly [{:client-id (byte-array [1 11 22 33 44 55])
+                                                                       :hw-address (byte-array [11 22 33 44 55 66])
+                                                                       :ip-address (byte-array [192 168 0 100])
+                                                                       :hostname "host1"
+                                                                       :lease-time 86400
+                                                                       :status "offer"
+                                                                       :offered-at (Instant/now)
+                                                                       :leased-at (Instant/now)
+                                                                       :expired-at (.minusSeconds (Instant/now) 86401)}])
                           core.packet/send-packet (fn [_ _ reply] (reset! packet-to-send reply) nil)]
               (is (nil? (h/handler th/socket-mock db config sample-packet)))
               (is (= (r.dhcp-message/map->DhcpMessage {:op :BOOTREPLY
@@ -205,7 +206,7 @@
                      :leased-at (Instant/now)
                      :expired-at (.plusSeconds (Instant/now) 80000)}
               mock-now (Instant/now)]
-          (c.database/add-lease db lease)
+          (p.db/add-lease db lease)
           (with-redefs [dhcp.handler.dhcp-request/now (constantly mock-now)
                         core.packet/send-packet (fn [_ _ reply] (reset! packet-to-send reply) nil)]
             (is (nil? (h/handler th/socket-mock db config sample-packet)))
@@ -239,7 +240,7 @@
                            :leased-at mock-now
                            :expired-at (.plusSeconds mock-now 3600))]
                    (map th/array->vec-recursively
-                        (c.database/find-leases-by-ip-address-range
+                        (p.db/find-leases-by-ip-address-range
                          db (byte-array [192 168 0 100]) (byte-array [192 168 0 100]))))))))))
   (testing "request-in-init-reboot"
            ;; TODO

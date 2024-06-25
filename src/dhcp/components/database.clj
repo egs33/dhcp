@@ -1,6 +1,7 @@
 (ns dhcp.components.database
   (:require
    [clojure.tools.logging :as log]
+   [dhcp.protocol.database :as p.db]
    [dhcp.util.bytes :as u.bytes]
    [malli.core :as m]
    [malli.error :as me]
@@ -14,20 +15,6 @@
  (mr/composite-registry
   (m/default-schemas)
   (met/schemas)))
-
-(defprotocol IDatabase
-  (add-reservations [this reservations])
-  (get-all-reservations [this])
-  (find-reservations-by-hw-address [this ^bytes hw-address])
-  (find-reservations-by-ip-address-range [this ^bytes start-address ^bytes end-address])
-  (delete-reservation [this ^bytes hw-address])
-
-  (add-lease [this lease])
-  (get-all-leases [this])
-  (find-leases-by-hw-address [this ^bytes hw-address])
-  (find-leases-by-ip-address-range [this ^bytes start-address ^bytes end-address])
-  (update-lease [this ^bytes hw-address ^bytes ip-address values])
-  (delete-lease [this ^bytes hw-address ^bytes start-address ^bytes end-address]))
 
 (def ^:private ReservationSchema
   [:map {:closed true}
@@ -76,7 +63,7 @@
              :private true}
   MemoryDatabase
   [^Atom state]
-  IDatabase
+  p.db/IDatabase
   (add-reservations [_ reservations]
     (doseq [reservation reservations]
       (assert-reservation reservation))
