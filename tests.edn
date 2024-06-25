@@ -1,7 +1,7 @@
 #kaocha/v1
 {:tests [{:id :small
           :source-paths ["src"]
-          :test-paths ["test"]
+          :test-paths ["test-small"]
           :ns-patterns ["-test$"]}]
  :plugins [:kaocha.plugin/print-invocations
            :kaocha.plugin/profiling
