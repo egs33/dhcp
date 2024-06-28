@@ -1,63 +1,11 @@
 (ns dhcp.components.database.memory
   (:require
-   [clojure.tools.logging :as log]
+   [dhcp.components.database.common :as db.common]
    [dhcp.protocol.database :as p.db]
-   [dhcp.util.bytes :as u.bytes]
-   [malli.core :as m]
-   [malli.error :as me]
-   [malli.experimental.time :as met]
-   [malli.registry :as mr])
+   [dhcp.util.bytes :as u.bytes])
   (:import
    (clojure.lang
     Atom)))
-
-(mr/set-default-registry!
- (mr/composite-registry
-  (m/default-schemas)
-  (met/schemas)))
-
-(def ^:private ReservationSchema
-  [:map {:closed true}
-   [:hw-address [:and
-                 bytes?
-                 [:fn #(pos? (count %))]]]
-   [:ip-address [:and
-                 bytes?
-                 [:fn #(= (count %) 4)]]]
-   [:source [:enum "config" "api"]]])
-
-(defn assert-reservation [reservation]
-  (when-not (m/validate ReservationSchema reservation)
-    (log/debugf "Invalid reservation: %s"
-                (me/humanize (m/explain ReservationSchema reservation)))
-    (throw (IllegalArgumentException. "Invalid reservation"))))
-
-(def ^:private LeaseSchema
-  [:and
-   [:map {:closed true}
-    [:client-id [:and
-                 bytes?
-                 [:fn #(pos? (count %))]]]
-    [:hw-address [:and
-                  bytes?
-                  [:fn #(pos? (count %))]]]
-    [:ip-address [:and
-                  bytes?
-                  [:fn #(= (count %) 4)]]]
-    [:hostname string?]
-    [:lease-time pos-int?]
-    [:status [:enum "offer" "lease"]]
-    [:offered-at :time/instant]
-    [:leased-at [:maybe :time/instant]]
-    [:expired-at :time/instant]]
-   [:fn (fn [{:keys [:status :leased-at]}]
-          (or (= status "offer")
-              (some? leased-at)))]])
-
-(defn assert-lease [lease]
-  (when-not (m/validate LeaseSchema lease)
-    (log/debugf "Invalid lease: %s" (me/humanize (m/explain LeaseSchema lease)))
-    (throw (IllegalArgumentException. "Invalid lease"))))
 
 (defrecord ^{:doc "Database Implementation for development. Clear data after restart."
              :private true}
@@ -66,7 +14,7 @@
   p.db/IDatabase
   (add-reservations [_ reservations]
     (doseq [reservation reservations]
-      (assert-reservation reservation))
+      (db.common/assert-reservation reservation))
     (swap! state #(update % :reservation into reservations)))
   (get-all-reservations [_]
     (:reservation @state))
@@ -91,7 +39,7 @@
                                        coll)))))))
 
   (add-lease [_ lease]
-    (assert-lease lease)
+    (db.common/assert-lease lease)
     (swap! state #(update % :lease conj lease)))
   (get-all-leases [_]
     (:lease @state))
