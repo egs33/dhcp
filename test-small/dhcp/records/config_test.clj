@@ -33,7 +33,7 @@
                           "subnets[2].router: invalid IP address"
                           "subnets[2].dns[0]:invalid IP address"
                           "subnets[2].pools[0]:invalid type"
-                          "database.type: should be memory"
+                          "database.type: should be \"memory\""
                           "foo: disallowed key\n"])
                msg)
             "error message")))
