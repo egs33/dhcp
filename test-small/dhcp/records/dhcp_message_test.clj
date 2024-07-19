@@ -2,11 +2,7 @@
   (:require
    [clojure.test :refer [deftest testing is]]
    [dhcp.records.dhcp-message :as r.dhcp-message]
-   [dhcp.records.ip-address :as r.ip-address])
-  (:import
-   (java.net
-    DatagramPacket
-    InetAddress)))
+   [dhcp.records.ip-address :as r.ip-address]))
 
 (deftest parse-message-test
   (testing "DHCPDISCOVER"
@@ -24,13 +20,7 @@
                        (repeat 64 0)
                        (repeat 128 0)
                        [99 130 83 99]
-                       [53 1 1] [0])
-          packet (DatagramPacket. (->> (concat data (repeat 0))
-                                       (take 1024)
-                                       byte-array)
-                                  0
-                                  (int (count data)))
-          ip-addr (InetAddress/getByAddress ^bytes (byte-array [192 168 0 1]))]
+                       [53 1 1] [0])]
       (is (= (r.dhcp-message/map->DhcpMessage
               {:op :BOOTREQUEST
                :htype (byte 1)
@@ -48,7 +38,7 @@
                :file ""
                :options [{:code 53, :type :dhcp-message-type, :length 1, :value [1]}
                          {:code 0, :type :pad, :length 0, :value []}]})
-             (r.dhcp-message/parse-message packet)))))
+             (r.dhcp-message/parse-message (byte-array data))))))
   (testing "DHCPDISCOVER-with-overload"
     (let [data (concat [1 1 6 0
                         8 16 54 92
@@ -75,13 +65,7 @@
                        [99 130 83 99]
                        [53 1 1]
                        [52 1 3]
-                       [255])
-          packet (DatagramPacket. (->> (concat data (repeat 0))
-                                       (take 1024)
-                                       byte-array)
-                                  0
-                                  (int (count data)))
-          ip-addr (InetAddress/getByAddress ^bytes (byte-array [192 168 0 1]))]
+                       [255])]
       (is (= (r.dhcp-message/map->DhcpMessage
               {:op :BOOTREQUEST
                :htype (byte 1)
@@ -104,7 +88,7 @@
                          {:code 50, :type :requested-ip-address, :length 4, :value (vec (byte-array [192 168 0 10]))}
                          {:code 12, :type :hostname, :length 6, :value (vec (.getBytes "client"))}
                          {:code 55, :type :parameter-list, :length 6, :value [1 3 6 15 119 121]}]})
-             (r.dhcp-message/parse-message packet))))))
+             (r.dhcp-message/parse-message (byte-array data)))))))
 
 (deftest ->bytes-test
   (testing "DHCPDISCOVER"

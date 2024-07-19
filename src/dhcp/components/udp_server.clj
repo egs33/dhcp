@@ -110,7 +110,7 @@
                 (when-let [udp-payload (get-in parsed [:ip-payload :udp-payload])]
                   (when (= (:destination-port udp-payload) UDP-SERVER-PORT)
                     (try
-                      (let [message (r.dhcp-message/parse-message udp-payload)
+                      (let [message (r.dhcp-message/parse-message (:payload udp-payload))
                             dhcp-packet (r.packet/->DhcpPacket hw-address
                                                                (:destination-mac parsed)
                                                                (:source-mac parsed)

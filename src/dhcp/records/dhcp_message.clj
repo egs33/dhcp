@@ -9,8 +9,6 @@
     Keyword)
    (dhcp.records.ip_address
     IpAddress)
-   (java.net
-    DatagramPacket)
    (java.nio.charset
     Charset)
    (java.util
@@ -97,9 +95,8 @@
              US-ASCII)))
 
 (defn parse-message
-  ^DhcpMessage [^DatagramPacket datagram]
-  (let [data (.getData datagram)
-        op (case (first data)
+  ^DhcpMessage [^bytes data]
+  (let [op (case (first data)
              1 :BOOTREQUEST
              2 :BOOTREPLY
              nil)
@@ -114,7 +111,7 @@
         siaddr (r.ip-address/bytes->ip-address (Arrays/copyOfRange data 20 24))
         giaddr (r.ip-address/bytes->ip-address (Arrays/copyOfRange data 24 28))
         chaddr (vec (Arrays/copyOfRange data 28 (int (+ (min hlen 16) 28))))
-        rest (Arrays/copyOfRange data 236 (.getLength datagram))
+        rest (Arrays/copyOfRange data 236 (count data))
         options (if (option/start-with-magic-cookie? rest)
                   (option/parse-options (drop 4 rest))
                   (log/warn "magic cookie not found" {:4octets (take 4 rest)
