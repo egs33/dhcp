@@ -65,5 +65,12 @@ subnets:
             value: "0a0bff10"
 
 database:
-  type: memory
+  type: postgresql
+  postgresql-option:
+    jdbc-url: jdbc:postgresql://localhost:5432/dhcp
+    username: root
+    password: p@ssw0rd
+    database-name: dhcp
+    server-name: localhost
+    port-number: 5432
 

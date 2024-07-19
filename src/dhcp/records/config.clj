@@ -179,8 +179,22 @@
                                                            IpAddressSchema]]]]
                          [:options {:optional true} [:sequential
                                                      OptionSchema]]]]]]]]
-   [:database {:error/message "must be object"} [:map
-                                                 [:type [:enum "memory"]]]]])
+   [:database {:error/message "must be object"}
+    [:and
+     [:fn {:error/message "postgres-option is required for type \"postgresql\""}
+      (fn [db]
+        (or (not= "postgresql" (:type db))
+            (map? (:postgresql-option db))))]
+     [:map {:closed true}
+      [:type [:enum "memory" "postgresql"]]
+      [:postgresql-option {:optional true}
+       [:map {:closed true}
+        [:jdbc-url {:optional true} :string]
+        [:username {:optional true} :string]
+        [:password {:optional true} :string]
+        [:database-name {:optional true} :string]
+        [:server-name {:optional true} :string]
+        [:port-number {:optional true} pos-int?]]]]]]])
 
 (defn- flat-error
   [error]

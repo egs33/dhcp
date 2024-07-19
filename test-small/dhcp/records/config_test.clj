@@ -33,7 +33,7 @@
                           "subnets[2].router: invalid IP address"
                           "subnets[2].dns[0]:invalid IP address"
                           "subnets[2].pools[0]:invalid type"
-                          "database.type: should be \"memory\""
+                          "database.type: should be either \"memory\" or \"postgresql\""
                           "foo: disallowed key\n"])
                msg)
             "error message")))
@@ -45,6 +45,16 @@
         (is (nil? @ret)
             "return nil")
         (is (= "subnets[0].pools[0].start-address: not in network\n"
+               msg)
+            "error message")))
+    (testing "no postgres option error"
+      (let [path1 (.getPath (io/resource "config/error-config3.yml"))
+            ret (atom nil)
+            msg (with-out-str
+                  (reset! ret (r.config/load-config path1)))]
+        (is (nil? @ret)
+            "return nil")
+        (is (= "database: postgres-option is required for type \"postgresql\"\n"
                msg)
             "error message"))))
   (testing "load success"
@@ -113,6 +123,12 @@
                                                {:code 190, :length 0, :value []}
                                                {:code 230, :length 5, :value [1 2 3 4 5]}
                                                {:code 231, :length 4, :value [10 11 -1 16]}]}]}],
-                 :database {:type "memory"}})
+                 :database {:type "postgresql"
+                            :postgresql-option {:jdbc-url "jdbc:postgresql://localhost:5432/dhcp"
+                                                :username "root"
+                                                :password "p@ssw0rd"
+                                                :database-name "dhcp"
+                                                :server-name "localhost"
+                                                :port-number 5432}}})
                config)
             "return config is normalized")))))
