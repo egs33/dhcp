@@ -4,6 +4,7 @@
    [clojure.java.io :as io]
    [com.stuartsierra.component :as component]
    [dhcp.components.database.memory :as db.mem]
+   [dhcp.components.database.postgres :as db.pg]
    [dhcp.components.handler :as c.handler]
    [dhcp.components.udp-server :as c.udp-server]
    [dhcp.records.config :as r.config]
@@ -13,6 +14,7 @@
   (component/system-map
    :db (case (get-in server-config [:database :type])
          "memory" (db.mem/new-memory-database)
+         "postgresql" (db.pg/new-postgres-database (get-in server-config [:database :postgresql-option]))
          (throw (IllegalArgumentException. (str "Unsupported database type: " type))))
    :handler (component/using
              (c.handler/map->Handler {:config server-config})
