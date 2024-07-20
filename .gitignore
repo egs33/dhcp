@@ -14,3 +14,4 @@ classes
 
 lib/*.so
 /rocksaw*/
+**/.clj-kondo/.cache
