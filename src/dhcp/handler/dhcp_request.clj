@@ -71,7 +71,7 @@
         (if (empty? leases)
           (let [_ (log/debug "DHCPREQUEST received, but no lease found")
                 reply (create-dhcp-nak message l-addr)]
-            (core.packet/send-packet socket message reply))
+            (core.packet/send-packet socket packet reply))
           (let [req-ip-bytes (byte-array (u.bytes/number->byte-coll requested 4))
                 pool (core.lease/select-pool-by-ip-address subnet req-ip-bytes)
                 _ (p.db/update-lease db
@@ -110,7 +110,7 @@
                         :sname ""
                         :file ""
                         :options options})]
-            (core.packet/send-packet socket message reply)))))))
+            (core.packet/send-packet socket packet reply)))))))
 
 (defn- request-in-init-reboot
   [^ISocket socket
@@ -130,7 +130,7 @@
       (let [l-addr (.getAddress (:local-ip-address packet))
             _ (log/debug "DHCPREQUEST received, but invalid subnet or requested address")
             reply (create-dhcp-nak message l-addr)]
-        (core.packet/send-packet socket message reply))
+        (core.packet/send-packet socket packet reply))
       (let [leases (->> (p.db/find-leases-by-hw-address db (:chaddr message))
                         (filter #(and (.isBefore (Instant/now) (:expired-at %))
                                       (= (:status %) "lease"))))]
@@ -170,11 +170,11 @@
                           :sname ""
                           :file ""
                           :options options})]
-              (core.packet/send-packet socket message reply))
+              (core.packet/send-packet socket packet reply))
             (let [l-addr (.getAddress (:local-ip-address packet))
                   _ (log/debug "DHCPREQUEST received, but lease record mismatch")
                   reply (create-dhcp-nak message l-addr)]
-              (core.packet/send-packet socket message reply))))))))
+              (core.packet/send-packet socket packet reply))))))))
 
 (defn- request-in-renewing
   [^ISocket socket
@@ -192,7 +192,7 @@
       (let [_ (log/info "DHCPREQUEST received, but no lease found")
             l-addr (.getAddress (:local-ip-address packet))
             reply (create-dhcp-nak message l-addr)]
-        (core.packet/send-packet socket message reply))
+        (core.packet/send-packet socket packet reply))
       (let [pool (core.lease/select-pool-by-ip-address subnet (r.ip-address/->bytes ciaddr))
             lease-time (if lease-time-opt
                          (min lease-time-opt (:lease-time pool))
@@ -236,7 +236,7 @@
                     :sname ""
                     :file ""
                     :options options})]
-        (core.packet/send-packet socket message reply)))))
+        (core.packet/send-packet socket packet reply)))))
 
 (defn- request-in-rebinding
   [^ISocket socket

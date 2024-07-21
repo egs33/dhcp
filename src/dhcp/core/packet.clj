@@ -132,7 +132,7 @@
 
 (defn send-packet
   [^ISocket socket
-   ^DhcpMessage request
+   ^DhcpPacket request
    ^DhcpMessage reply]
   (let [eth-frame (create-datagram request reply)]
     (c.socket/send socket (byte-array eth-frame))))
