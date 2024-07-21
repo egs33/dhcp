@@ -18,4 +18,6 @@ WORKDIR /app
 COPY --from=builder /app/target/app.jar /app/app.jar
 COPY --from=builder /app/lib/librocksaw.so /app/lib/librocksaw.so
 
+EXPOSE 67/udp
+
 ENTRYPOINT ["java", "-Djava.library.path=lib", "-jar", "/app/app.jar"]
