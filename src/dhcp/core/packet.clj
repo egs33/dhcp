@@ -93,7 +93,7 @@
         message-type (first (r.dhcp-message/get-option reply 53))]
     (cond
       (not= (r.ip-address/->int (:giaddr request-message)) 0)
-      {:dest-ip-addr (InetAddress/getByAddress (r.ip-address/->bytes (:giaddr request-message)))
+      {:dest-ip-addr (InetAddress/getByAddress (r.ip-address/->byte-array (:giaddr request-message)))
        :dest-mac-addr (:remote-hw-address request)
        :dest-port 67}
 
@@ -104,7 +104,7 @@
 
       (and (not= (r.ip-address/->int (:ciaddr request-message)) 0)
            (#{DHCPOFFER DHCPACK} message-type))
-      {:dest-ip-addr (InetAddress/getByAddress (r.ip-address/->bytes (:ciaddr request-message)))
+      {:dest-ip-addr (InetAddress/getByAddress (r.ip-address/->byte-array (:ciaddr request-message)))
        :dest-mac-addr (:remote-hw-address request)
        :dest-port 68}
 
@@ -115,7 +115,7 @@
        :dest-port 68}
 
       :else
-      {:dest-ip-addr (InetAddress/getByAddress (r.ip-address/->bytes (:yiaddr request-message)))
+      {:dest-ip-addr (InetAddress/getByAddress (r.ip-address/->byte-array (:yiaddr request-message)))
        :dest-mac-addr (:remote-hw-address request)
        :dest-port 68})))
 
