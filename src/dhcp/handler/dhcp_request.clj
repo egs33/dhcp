@@ -238,8 +238,12 @@
                     :options options})]
         (core.packet/send-packet socket message reply)))))
 
-(defn- request-in-rebinding []
-  (log/info "request-in-rebinding not implemented"))
+(defn- request-in-rebinding
+  [^ISocket socket
+   ^IDatabase db
+   subnet
+   ^DhcpPacket packet]
+  (request-in-renewing socket db subnet packet))
 
 (defmethod h/handler DHCPREQUEST
   [^ISocket socket
@@ -264,7 +268,7 @@
       (log/info "invalid DHCPREQUEST")
 
       (:is-broadcast packet)
-      (request-in-rebinding)
+      (request-in-rebinding socket db subnet (:ciaddr message))
 
       :else
       (request-in-renewing socket db subnet (:ciaddr message)))))
