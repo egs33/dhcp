@@ -118,7 +118,16 @@
                                                                (= (r.ip-address/->bytes (get-in parsed [:ip-payload :destination-ip]))
                                                                   [255 255 255 255])
                                                                message)]
-                        (handler @socket-atom dhcp-packet))
+                        (try
+                          (handler @socket-atom dhcp-packet)
+                          (catch ExceptionInfo e
+                            (log/error "handler (type: %s) exception-info %s %s"
+                                       (r.dhcp-message/get-type message)
+                                       (ex-message e) (ex-data e)))
+                          (catch Exception e
+                            (log/error "handler exception (type: %s) %s"
+                                       (r.dhcp-message/get-type message)
+                                       e))))
                       (catch ExceptionInfo e
                         (log/error "parse-message exception-info %s %s"
                                    (ex-message e) (ex-data e)))
