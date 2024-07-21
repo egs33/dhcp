@@ -16,7 +16,8 @@
  :aliases {:dev {:extra-paths ["test-small" "test-medium" "test-resources"]
                  :extra-deps {lambdaisland/kaocha {:mvn/version "1.91.1392"}
                               lambdaisland/kaocha-cloverage {:mvn/version "1.1.89"}}
-                 :jvm-opts ["-Djava.library.path=./lib"]}
+                 :jvm-opts ["-Djava.library.path=./lib"
+                            "-Dclojure.core.async.go-checking=true"]}
            :test {:main-opts ["-m" "kaocha.runner"]}
            :compile {:jvm-opts ["-Djava.library.path=./lib"]}
            :uberjar {:replace-deps {uberdeps/uberdeps {:mvn/version "1.3.0"}}
