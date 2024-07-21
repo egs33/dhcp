@@ -5,7 +5,8 @@ INSERT INTO
   lease_status (value)
 VALUES
   ('offer'),
-  ('lease');
+  ('lease'),
+  ('declined');
 
 --;;
 CREATE TABLE lease (
