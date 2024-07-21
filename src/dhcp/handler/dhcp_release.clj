@@ -4,7 +4,7 @@
    [dhcp.components.socket]
    [dhcp.const.dhcp-type :refer [DHCPRELEASE]]
    [dhcp.handler :as h]
-   [dhcp.protocol.database])
+   [dhcp.protocol.database :as p.db])
   (:import
    (dhcp.components.socket
     ISocket)
@@ -13,11 +13,18 @@
    (dhcp.records.config
     Config)
    (dhcp.records.dhcp_packet
-    DhcpPacket)))
+    DhcpPacket)
+   (java.time
+    Instant)))
 
 (defmethod h/handler DHCPRELEASE
   [^ISocket _socket
-   ^IDatabase _db
+   ^IDatabase db
    ^Config _config
    ^DhcpPacket packet]
-  (log/debugf "DHCPRELEASE %s" (:message packet)))
+  (log/debugf "DHCPRELEASE %s" (:message packet))
+  (let [message (:message packet)]
+    (p.db/update-lease db
+                       (:chaddr message)
+                       (:ciaddr message)
+                       {:expired-at (Instant/now)})))
