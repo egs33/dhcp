@@ -236,7 +236,8 @@
              error))
 
 (defprotocol IConfig
-  (select-subnet [this ^Inet4Address ip-address]))
+  (select-subnet [this ^Inet4Address ip-address])
+  (reservations [this]))
 
 (defrecord Config [config]
   IConfig
@@ -247,7 +248,15 @@
                      (<= (r.ip-address/->int start-address)
                          ip-addr
                          (r.ip-address/->int end-address))))
-           first))))
+           first)))
+  (reservations [_]
+    (->> (:subnets config)
+         (mapcat :pools)
+         (mapcat :reservation)
+         (mapv (fn [{:keys [:hw-address :ip-address]}]
+                 {:hw-address (byte-array hw-address)
+                  :ip-address (r.ip-address/->byte-array ip-address)
+                  :source "config"})))))
 
 (defn load-config [^String path]
   (let [yml-str (slurp path)

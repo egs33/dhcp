@@ -7,6 +7,7 @@
    [dhcp.components.database.postgres :as db.pg]
    [dhcp.components.handler :as c.handler]
    [dhcp.components.udp-server :as c.udp-server]
+   [dhcp.protocol.database :as p.db]
    [dhcp.records.config :as r.config]
    [unilog.config :as unilog]))
 
@@ -28,7 +29,9 @@
                                    (:debug options) (assoc :level :debug)))
         server-config (r.config/load-config (:config options))]
     (when server-config
-      (component/start (new-system config server-config)))))
+      (let [system (component/start (new-system config server-config))]
+        (p.db/add-reservations (:db system) (r.config/reservations server-config))
+        system))))
 
 (defn stop [system]
   (component/stop system))

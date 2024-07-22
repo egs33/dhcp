@@ -4,7 +4,8 @@
    [clojure.string :as str]
    [clojure.test :refer [deftest testing is]]
    [dhcp.records.config :as r.config]
-   [dhcp.records.ip-address :as r.ip-address]))
+   [dhcp.records.ip-address :as r.ip-address]
+   [dhcp.test-helper :as th]))
 
 (deftest load-config-test
   (testing "load error"
@@ -132,3 +133,69 @@
                                                 :port-number 5432}}})
                config)
             "return config is normalized")))))
+
+(deftest reservations-test
+  (is (= (->> [{:hw-address [0 0 0 0 0 1], :ip-address "192.168.0.50"}
+               {:hw-address [0 0 0 0 0 2], :ip-address "192.168.0.60"}
+               {:hw-address [0 0 0 17 17 17], :ip-address "192.168.0.70"}
+               {:hw-address [0 0 0 34 34 34], :ip-address "192.168.0.72"}
+               {:hw-address [0 0 0 -86 -86 -86], :ip-address "172.16.10.0"}
+               {:hw-address [0 0 0 -69 -69 -69], :ip-address "172.16.10.1"}]
+              (map #(-> %
+                        (update :ip-address (comp th/byte-vec
+                                                  r.ip-address/->byte-array
+                                                  r.ip-address/str->ip-address))
+                        (assoc :source "config"))))
+         (th/array->vec-recursively
+          (r.config/reservations
+           (r.config/->Config
+            {:interfaces ["eth0" "eth1"]
+             :subnets [{:start-address (r.ip-address/str->ip-address "192.168.0.0")
+                        :end-address (r.ip-address/str->ip-address "192.168.0.127")
+                        :pools [{:start-address (r.ip-address/str->ip-address "192.168.0.50")
+                                 :end-address (r.ip-address/str->ip-address "192.168.0.60")
+                                 :only-reserved-lease true
+                                 :lease-time 10800
+                                 :reservation [{:hw-address [0 0 0 0 0 1], :ip-address (r.ip-address/str->ip-address "192.168.0.50")}
+                                               {:hw-address [0 0 0 0 0 2], :ip-address (r.ip-address/str->ip-address "192.168.0.60")}]
+                                 :options [{:code 1, :type :subnet-mask, :length 4, :value [255 255 255 128]}
+                                           {:code 3, :type :router, :length 4, :value [192 168 0 1]}
+                                           {:code 6, :type :domain-server, :length 4, :value [192 168 0 2]}
+                                           {:code 190, :length 0, :value []}
+                                           {:code 191, :length 3, :value [-1 -1 -1]}
+                                           {:code 200, :length 5, :value [1 2 3 4 5]}
+                                           {:code 201, :length 4, :value [10 11 -1 16]}]}
+                                {:start-address (r.ip-address/str->ip-address "192.168.0.70")
+                                 :end-address (r.ip-address/str->ip-address "192.168.0.90")
+                                 :only-reserved-lease false
+                                 :lease-time 50000
+                                 :reservation [{:hw-address [0 0 0 17 17 17], :ip-address (r.ip-address/str->ip-address "192.168.0.70")}
+                                               {:hw-address [0 0 0 34 34 34], :ip-address (r.ip-address/str->ip-address "192.168.0.72")}]
+                                 :options [{:code 1, :type :subnet-mask, :length 4, :value [255 255 255 128]}
+                                           {:code 3, :type :router, :length 4, :value [192 168 0 1]}
+                                           {:code 6, :type :domain-server, :length 4, :value [192 168 0 2]}
+                                           {:code 190, :length 0, :value []}
+                                           {:code 191, :length 3, :value [-1 -1 -1]}
+                                           {:code 210, :length 0, :value []}
+                                           {:code 211, :length 8, :value [17 17 17 17 17 17 17 17]}]}]}
+                       {:start-address (r.ip-address/str->ip-address "172.16.0.0")
+                        :end-address (r.ip-address/str->ip-address "172.16.255.255")
+                        :pools [{:start-address (r.ip-address/str->ip-address "172.16.10.0")
+                                 :end-address (r.ip-address/str->ip-address "172.16.20.0")
+                                 :only-reserved-lease true
+                                 :lease-time 10800
+                                 :reservation [{:hw-address [0 0 0 -86 -86 -86], :ip-address (r.ip-address/str->ip-address "172.16.10.0")}
+                                               {:hw-address [0 0 0 -69 -69 -69], :ip-address (r.ip-address/str->ip-address "172.16.10.1")}]
+                                 :options [{:code 1, :type :subnet-mask, :length 4, :value [255 255 0 0]}
+                                           {:code 3, :type :router, :length 4, :value [172 16 100 0]}
+                                           {:code 6, :type :domain-server, :length 8, :value [172 16 100 1 172 16 100 2]}
+                                           {:code 190, :length 0, :value []}
+                                           {:code 230, :length 5, :value [1 2 3 4 5]}
+                                           {:code 231, :length 4, :value [10 11 -1 16]}]}]}],
+             :database {:type "postgresql"
+                        :postgresql-option {:jdbc-url "jdbc:postgresql://localhost:5432/dhcp"
+                                            :username "root"
+                                            :password "p@ssw0rd"
+                                            :database-name "dhcp"
+                                            :server-name "localhost"
+                                            :port-number 5432}}}))))))
