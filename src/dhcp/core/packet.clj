@@ -115,7 +115,7 @@
        :dest-port 68}
 
       :else
-      {:dest-ip-addr (InetAddress/getByAddress (r.ip-address/->byte-array (:yiaddr request-message)))
+      {:dest-ip-addr (InetAddress/getByAddress (r.ip-address/->byte-array (:yiaddr reply)))
        :dest-mac-addr (:remote-hw-address request)
        :dest-port 68})))
 
