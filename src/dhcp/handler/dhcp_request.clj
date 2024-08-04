@@ -271,8 +271,8 @@
 
       (:is-broadcast packet)
       (do (log/debug "DHCPREQUEST (rebinding)")
-          (request-in-rebinding socket db subnet (:ciaddr message)))
+          (request-in-rebinding socket db subnet packet))
 
       :else
       (do (log/debug "DHCPREQUEST (renewing)")
-          (request-in-renewing socket db subnet (:ciaddr message))))))
+          (request-in-renewing socket db subnet packet)))))
