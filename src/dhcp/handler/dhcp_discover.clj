@@ -100,5 +100,5 @@
                       :file ""
                       :options options})]
           (core.packet/send-packet socket packet reply))
-        (log/infof "no address for leasing in %s to %s" (:local-address message) (:chaddr message))))
+        (log/infof "no address for leasing in %s to %s" (:local-ip-address packet) (str (:chaddr message)))))
     (log/infof "no subnet found for %s" (:local-ip-address packet))))

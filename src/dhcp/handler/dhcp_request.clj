@@ -80,7 +80,7 @@
                                      {:status "lease"
                                       :leased-at (now)
                                       :expired-at (.plusSeconds (now) (:lease-time pool))})
-                _ (log/debugf "DHCPREQUEST lease updated %s" (u.bytes/->str (byte-array (:chaddr message))))
+                _ (log/debugf "DHCPREQUEST lease updated %s" (str (:chaddr message)))
                 options-by-code (reduce #(assoc %1 (:code %2) %2) {} (:options pool))
                 requested-params (->> (r.dhcp-message/get-option message 55)
                                       (map #(Byte/toUnsignedInt %))
@@ -135,7 +135,7 @@
                         (filter #(and (.isBefore (Instant/now) (:expired-at %))
                                       (= (:status %) "lease"))))]
         (if (empty? leases)
-          (log/infof "no lease found for %s" (:chaddr message))
+          (log/infof "no lease found for %s" (str (:chaddr message)))
           (if (->> leases
                    (filter #(= requested-addr (u.bytes/bytes->number (:ip-address %))))
                    seq)
@@ -206,7 +206,7 @@
                                  (:chaddr message)
                                  (r.ip-address/->bytes ciaddr)
                                  {:expired-at (.plusSeconds (now) lease-time)})
-            _ (log/debugf "DHCPREQUEST lease updated %s" (u.bytes/->str (byte-array (:chaddr message))))
+            _ (log/debugf "DHCPREQUEST lease updated %s" (str (:chaddr message)))
             options-by-code (reduce #(assoc %1 (:code %2) %2) {} (:options pool))
             requested-params (->> (r.dhcp-message/get-option message 55)
                                   (map #(Byte/toUnsignedInt %))
