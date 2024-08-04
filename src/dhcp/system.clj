@@ -2,6 +2,7 @@
   (:require
    [aero.core :as aero]
    [clojure.java.io :as io]
+   [clojure.tools.logging :as log]
    [com.stuartsierra.component :as component]
    [dhcp.components.database.memory :as db.mem]
    [dhcp.components.database.postgres :as db.pg]
@@ -11,7 +12,7 @@
    [dhcp.records.config :as r.config]
    [unilog.config :as unilog]))
 
-(defn- new-system [_config {:as server-config :keys [:config]}]
+(defn- new-system [{:keys [:dry-run]} {:as server-config :keys [:config]}]
   (component/system-map
    :db (case (get-in config [:database :type])
          "memory" (db.mem/new-memory-database)
@@ -20,14 +21,18 @@
    :handler (component/using
              (c.handler/map->Handler {:config server-config})
              [:db])
-   :udp-server (component/using (c.udp-server/map->UdpServer {:config config})
+   :udp-server (component/using (c.udp-server/map->UdpServer {:config config
+                                                              :dry-run? dry-run})
                                 [:handler])))
 
 (defn start [options]
-  (let [config (aero/read-config (io/resource "config.edn") {:profile :prod})
+  (let [config (-> (aero/read-config (io/resource "config.edn") {:profile :prod})
+                   (assoc :dry-run (:dry-run options)))
         _ (unilog/start-logging! (cond-> (:logging config)
                                    (:debug options) (assoc :level :debug)))
         server-config (r.config/load-config (:config options))]
+    (when (:dry-run config)
+      (log/info "dry-run mode enabled"))
     (when server-config
       (let [system (component/start (new-system config server-config))]
         (p.db/add-reservations (:db system) (r.config/reservations server-config))

@@ -10,6 +10,8 @@
     :default "config.yml"]
    ["-h" "--help" "show this help message"
     :default false]
+   [nil "--dry-run" "listen packets and process but do not send responses"
+    :default false]
    [nil "--debug" nil
     :default false]])
 
