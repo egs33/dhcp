@@ -250,7 +250,7 @@
    ^IDatabase db
    ^Config config
    ^DhcpPacket packet]
-  (log/debugf "DHCPDISCOVER %s" (:message packet))
+  (log/debugf "DHCPREQUEST %s" (:message packet))
   (let [subnet (r.config/select-subnet config (:local-ip-address packet))
         message (:message packet)
         s-id (r.dhcp-message/get-option message 54)
@@ -258,17 +258,21 @@
     (cond
       s-id
       (if subnet
-        (request-in-selecting socket db subnet packet s-id requested)
+        (do (log/debug "DHCPREQUEST (selecting)")
+            (request-in-selecting socket db subnet packet s-id requested))
         (log/infof "no subnet found for %s" (:local-ip-address packet)))
 
       requested
-      (request-in-init-reboot socket db subnet packet requested)
+      (do (log/debug "DHCPREQUEST (init reboot)")
+          (request-in-init-reboot socket db subnet packet requested))
 
       (zero? (r.ip-address/->int (:ciaddr message)))
       (log/info "invalid DHCPREQUEST")
 
       (:is-broadcast packet)
-      (request-in-rebinding socket db subnet (:ciaddr message))
+      (do (log/debug "DHCPREQUEST (rebinding)")
+          (request-in-rebinding socket db subnet (:ciaddr message)))
 
       :else
-      (request-in-renewing socket db subnet (:ciaddr message)))))
+      (do (log/debug "DHCPREQUEST (renewing)")
+          (request-in-renewing socket db subnet (:ciaddr message))))))

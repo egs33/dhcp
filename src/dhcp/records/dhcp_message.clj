@@ -77,7 +77,11 @@
     (->> options
          (filter #(= (:code %) code))
          first
-         :value)))
+         :value))
+
+  Object
+  (toString [this]
+    (str (into {} this))))
 
 (defn- bytes->str
   "convert null terminated bytes to string"

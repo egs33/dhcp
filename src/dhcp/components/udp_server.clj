@@ -100,11 +100,11 @@
                                   (catch SocketException e
                                     (log/infof "socket exception %s" e))
                                   (catch ExceptionInfo e
-                                    (log/error "udp-server exception-info %s %s"
-                                               (ex-message e) (ex-data e)))
+                                    (log/errorf "udp-server exception-info %s %s"
+                                                (ex-message e) (ex-data e)))
                                   (catch Exception e
-                                    (log/error "udp-server exception %s"
-                                               e)))))]
+                                    (log/errorf "udp-server exception %s"
+                                                e)))))]
             (when packet
               (let [parsed (parse-ethernet-frame packet)]
                 (when-let [udp-payload (get-in parsed [:ip-payload :udp-payload])]
@@ -121,19 +121,19 @@
                         (try
                           (handler @socket-atom dhcp-packet)
                           (catch ExceptionInfo e
-                            (log/error "handler (type: %s) exception-info %s %s"
-                                       (r.dhcp-message/get-type message)
-                                       (ex-message e) (ex-data e)))
+                            (log/errorf "handler (type: %s) exception-info %s %s"
+                                        (r.dhcp-message/get-type message)
+                                        (ex-message e) (ex-data e)))
                           (catch Exception e
-                            (log/error "handler exception (type: %s) %s"
-                                       (r.dhcp-message/get-type message)
-                                       e))))
+                            (log/errorf "handler exception (type: %s) %s"
+                                        (r.dhcp-message/get-type message)
+                                        e))))
                       (catch ExceptionInfo e
-                        (log/error "parse-message exception-info %s %s"
-                                   (ex-message e) (ex-data e)))
+                        (log/errorf "parse-message exception-info %s %s"
+                                    (ex-message e) (ex-data e)))
                       (catch Exception e
-                        (log/error "parse-message exception %s"
-                                   e)))))))
+                        (log/errorf "parse-message exception %s"
+                                    e)))))))
             (recur))
           (log/infof "udp-server is closed")))
       (reset! socket-atom socket)))
