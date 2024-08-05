@@ -124,17 +124,21 @@
                           (catch ExceptionInfo e
                             (log/errorf "handler (type: %s) exception-info %s %s"
                                         (r.dhcp-message/get-type message)
-                                        (ex-message e) (ex-data e)))
+                                        (ex-message e) (ex-data e))
+                            (log/debugf "trace: %s" (.getStackTrace e)))
                           (catch Exception e
                             (log/errorf "handler exception (type: %s) %s"
                                         (r.dhcp-message/get-type message)
-                                        e))))
+                                        e)
+                            (log/debugf "trace: %s" (.getStackTrace e)))))
                       (catch ExceptionInfo e
                         (log/errorf "parse-message exception-info %s %s"
-                                    (ex-message e) (ex-data e)))
+                                    (ex-message e) (ex-data e))
+                        (log/debugf "trace: %s" (.getStackTrace e)))
                       (catch Exception e
                         (log/errorf "parse-message exception %s"
-                                    e)))))))
+                                    e)
+                        (log/debugf "trace: %s" (.getStackTrace e))))))))
             (recur))
           (log/infof "udp-server is closed")))
       (reset! socket-atom socket)))
