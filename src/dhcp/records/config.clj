@@ -273,7 +273,9 @@
           (doseq [m err-msgs]
             (println m)))
         (try
-          (->Config (normalize-config data))
+          (let [config (normalize-config data)]
+            (log/debug "config loaded" config)
+            (->Config config))
           (catch ExceptionInfo ex
             (println (:message (ex-data ex)))
             (log/error "config load error" {:errors (ex-data ex)}))
