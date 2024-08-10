@@ -12,7 +12,7 @@
    [dhcp.records.config :as r.config]
    [unilog.config :as unilog]))
 
-(defn- new-system [{:keys [:dry-run]} {:as server-config :keys [:config]}]
+(defn- new-system [{:keys [:listen-only]} {:as server-config :keys [:config]}]
   (component/system-map
    :db (case (get-in config [:database :type])
          "memory" (db.mem/new-memory-database)
@@ -22,17 +22,17 @@
              (c.handler/map->Handler {:config server-config})
              [:db])
    :udp-server (component/using (c.udp-server/map->UdpServer {:config config
-                                                              :dry-run? dry-run})
+                                                              :listen-only? listen-only})
                                 [:handler])))
 
 (defn start [options]
   (let [config (-> (aero/read-config (io/resource "config.edn") {:profile :prod})
-                   (assoc :dry-run (:dry-run options)))
+                   (assoc :listen-only (:listen-only options)))
         _ (unilog/start-logging! (cond-> (:logging config)
                                    (:debug options) (assoc :level :debug)))
         server-config (r.config/load-config (:config options))]
-    (when (:dry-run config)
-      (log/info "dry-run mode enabled"))
+    (when (:listen-only config)
+      (log/info "listen only mode enabled"))
     (when server-config
       (let [system (component/start (new-system config server-config))]
         (p.db/add-reservations (:db system) (r.config/reservations server-config))

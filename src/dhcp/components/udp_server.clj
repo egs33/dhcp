@@ -87,12 +87,12 @@
                                       ^bytes hw-address
                                       socket-atom
                                       ^IFn handler
-                                      dry-run?]
+                                      listen-only?]
   IUdpServerSocket
   (open [_]
     (when @socket-atom
       (c.socket/close @socket-atom))
-    (let [socket (c.socket/newEthSocket device-name dry-run?)]
+    (let [socket (c.socket/newEthSocket device-name listen-only?)]
       (c.socket/open socket)
       (as/go-loop []
         (if (c.socket/open? socket)
@@ -160,7 +160,7 @@
 (defrecord UdpServer [sockets
                       handler
                       config
-                      dry-run?]
+                      listen-only?]
   component/Lifecycle
   (start [this]
     (log/info "UdpServer start")
@@ -174,7 +174,7 @@
                                                               :hw-address hw-address
                                                               :socket-atom (atom nil)
                                                               :handler (:handler handler)
-                                                              :dry-run? dry-run?})
+                                                              :listen-only? listen-only?})
                                       ip-addresses)))
                        vec)]
       (log/infof "Listening interfaces:%s" (vec interfaces))

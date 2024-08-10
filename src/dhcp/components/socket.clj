@@ -15,7 +15,7 @@
 
 (defrecord ^:private EthSocket [^String device-name
                                 socket-atom
-                                dry-run?]
+                                listen-only?]
   ISocket
   (open [_]
     (let [socket (RawSocket.)]
@@ -36,12 +36,12 @@
         (Arrays/copyOfRange buf 0 (int len)))
       (throw (IllegalStateException.))))
   (send [_ data]
-    (when-not dry-run?
+    (when-not listen-only?
       (.writeEth ^RawSocket @socket-atom device-name data 0 (count data)))))
 
 (defn newEthSocket
   ([^String device-name]
    (newEthSocket device-name false))
   ([^String device-name
-    dry-run?]
-   (->EthSocket device-name (atom nil) dry-run?)))
+    listen-only?]
+   (->EthSocket device-name (atom nil) listen-only?)))
