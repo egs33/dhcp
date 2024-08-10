@@ -1,6 +1,7 @@
 (ns dhcp.components.udp-server
   (:require
    [clojure.core.async :as as]
+   [clojure.stacktrace :as trace]
    [clojure.tools.logging :as log]
    [com.stuartsierra.component :as component]
    [dhcp.components.socket :as c.socket]
@@ -125,20 +126,20 @@
                             (log/errorf "handler (type: %s) exception-info %s %s"
                                         (r.dhcp-message/get-type message)
                                         (ex-message e) (ex-data e))
-                            (log/debugf "trace: %s" (.getStackTrace e)))
+                            (trace/print-stack-trace e))
                           (catch Exception e
                             (log/errorf "handler exception (type: %s) %s"
                                         (r.dhcp-message/get-type message)
                                         e)
-                            (log/debugf "trace: %s" (.getStackTrace e)))))
+                            (trace/print-stack-trace e))))
                       (catch ExceptionInfo e
                         (log/errorf "parse-message exception-info %s %s"
                                     (ex-message e) (ex-data e))
-                        (log/debugf "trace: %s" (.getStackTrace e)))
+                        (trace/print-stack-trace e))
                       (catch Exception e
                         (log/errorf "parse-message exception %s"
                                     e)
-                        (log/debugf "trace: %s" (.getStackTrace e))))))))
+                        (trace/print-stack-trace e)))))))
             (recur))
           (log/infof "udp-server is closed")))
       (reset! socket-atom socket)))
