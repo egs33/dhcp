@@ -181,11 +181,11 @@
    ^IDatabase db
    subnet
    ^DhcpPacket packet]
-  (let [{:keys [:ciaddr] :as message} (:message packet)
+  (let [{:keys [:ciaddr :chaddr] :as message} (:message packet)
         lease-time-opt (some-> (r.dhcp-message/get-option message 51)
                                byte-array
                                u.bytes/bytes->number)
-        leases (->> (p.db/find-leases-by-hw-address db ciaddr)
+        leases (->> (p.db/find-leases-by-hw-address db chaddr)
                     (filter #(and (.isBefore (Instant/now) (:expired-at %))
                                   (= (:status %) "lease"))))]
     (if (empty? leases)
@@ -203,10 +203,10 @@
                            (+ lease-time))
             lease-time (max lease-time 600)
             _ (p.db/update-lease db
-                                 (:chaddr message)
+                                 chaddr
                                  (r.ip-address/->bytes ciaddr)
                                  {:expired-at (.plusSeconds (now) lease-time)})
-            _ (log/debugf "DHCPREQUEST lease updated %s" (str (:chaddr message)))
+            _ (log/debugf "DHCPREQUEST lease updated %s" (str chaddr))
             options-by-code (reduce #(assoc %1 (:code %2) %2) {} (:options pool))
             requested-params (->> (r.dhcp-message/get-option message 55)
                                   (map #(Byte/toUnsignedInt %))
@@ -229,7 +229,7 @@
                     :secs 0
                     :flags (:flags message)
                     :ciaddr (r.ip-address/->IpAddress 0)
-                    :yiaddr (:chaddr message)
+                    :yiaddr ciaddr
                     :siaddr (r.ip-address/->IpAddress 0)
                     :giaddr (:giaddr message)
                     :chaddr (:chaddr message)
