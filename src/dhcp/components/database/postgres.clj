@@ -70,7 +70,7 @@
   component/Lifecycle
   (start [this]
     (let [datasource (or datasource
-                         (hc/make-datasource option))
+                         (hc/make-datasource (assoc option :adapter "postgresql")))
           component (assoc this :datasource datasource)]
       (mig/migrate {:store :database
                     :migration-dir "migrations"
