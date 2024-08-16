@@ -1,5 +1,6 @@
 (ns dhcp.records.dhcp-message
   (:require
+   [clojure.string :as str]
    [clojure.tools.logging :as log]
    [dhcp.core.option :as option]
    [dhcp.records.ip-address :as r.ip-address]
@@ -81,7 +82,16 @@
 
   Object
   (toString [this]
-    (str (into {} this))))
+    (-> this
+        (update :ciaddr str)
+        (update :yiaddr str)
+        (update :siaddr str)
+        (update :giaddr str)
+        (update :chaddr (fn [chaddr]
+                          (->> chaddr
+                               (map #(format "%02x" (Byte/toUnsignedInt %)))
+                               (str/join ":"))))
+        str)))
 
 (defn- bytes->str
   "convert null terminated bytes to string"
