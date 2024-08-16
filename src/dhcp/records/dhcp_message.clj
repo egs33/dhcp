@@ -82,7 +82,7 @@
 
   Object
   (toString [this]
-    (-> this
+    (-> (into {} this)
         (update :ciaddr str)
         (update :yiaddr str)
         (update :siaddr str)
