@@ -36,4 +36,4 @@
                          {:status "declined"
                           ;; pseudo client hw address for not available ip address
                           :hw-address (byte-array [255 255 255 255 255 255])
-                          :expired-at (.plus (Instant/now) ChronoUnit/HOURS 12)}))))
+                          :expired-at (.plus (Instant/now) 12 ChronoUnit/HOURS)}))))
