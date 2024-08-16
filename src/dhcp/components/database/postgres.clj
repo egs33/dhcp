@@ -112,6 +112,10 @@
     (-> (sql/delete-from :reservation)
         (sql/where [:= :hw-address hw-address])
         (->> (execute-batch datasource))))
+  (delete-reservations-by-source [_ source]
+    (-> (sql/delete-from :reservation)
+        (sql/where [:= :source source])
+        (->> (execute-batch datasource))))
 
   (add-lease [_ lease]
     (db.common/assert-lease lease)

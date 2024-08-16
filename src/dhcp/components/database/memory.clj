@@ -37,6 +37,13 @@
                                (remove #(= (u.bytes/bytes->number (:hw-address %))
                                            value)
                                        coll)))))))
+  (delete-reservations-by-source [_ source]
+    (swap! state (fn [current]
+                   (update current
+                           :reservation
+                           (fn [coll]
+                             (remove #(= (:source %) source)
+                                     coll))))))
 
   (add-lease [_ lease]
     (db.common/assert-lease lease)

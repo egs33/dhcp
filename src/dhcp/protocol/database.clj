@@ -6,6 +6,7 @@
   (find-reservations-by-hw-address [this ^bytes hw-address])
   (find-reservations-by-ip-address-range [this ^bytes start-address ^bytes end-address])
   (delete-reservation [this ^bytes hw-address])
+  (delete-reservations-by-source [this source])
 
   (add-lease [this lease])
   (get-all-leases [this])

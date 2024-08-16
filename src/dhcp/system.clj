@@ -35,6 +35,7 @@
       (log/info "listen only mode enabled"))
     (when server-config
       (let [system (component/start (new-system config server-config))]
+        (p.db/delete-reservations-by-source (:db system) "config")
         (p.db/add-reservations (:db system) (r.config/reservations server-config))
         system))))
 
