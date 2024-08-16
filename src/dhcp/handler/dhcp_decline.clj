@@ -31,7 +31,7 @@
                                        byte-array)]
       (log/warnf "The ip address %s is declined." requested-addr)
       (p.db/update-lease db
-                         (:chaddr message)
+                         (byte-array (:chaddr message))
                          requested-addr
                          {:status "declined"
                           ;; pseudo client hw address for not available ip address

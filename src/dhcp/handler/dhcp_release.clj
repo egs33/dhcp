@@ -25,6 +25,6 @@
   (log/debugf "DHCPRELEASE %s" (:message packet))
   (let [message (:message packet)]
     (p.db/update-lease db
-                       (:chaddr message)
+                       (byte-array (:chaddr message))
                        (:ciaddr message)
                        {:expired-at (Instant/now)})))
