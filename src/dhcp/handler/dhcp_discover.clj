@@ -60,7 +60,10 @@
                                      (byte-array (:chaddr message))
                                      (r.ip-address/->byte-array (:start-address subnet))
                                      (r.ip-address/->byte-array (:end-address subnet)))
-                  (p.db/add-lease db {:client-id (byte-array client-id)
+                  (p.db/add-lease db {:client-id (if client-id
+                                                   (byte-array client-id)
+                                                   (byte-array (concat [-1 -1 -1 -1 -1 -1 (:htype message)]
+                                                                       (:chaddr message))))
                                       :hw-address (byte-array (:chaddr message))
                                       :ip-address ip-address
                                       :hostname (bytes->str (r.dhcp-message/get-option
