@@ -193,7 +193,7 @@
             l-addr (.getAddress (:local-ip-address packet))
             reply (create-dhcp-nak message l-addr)]
         (core.packet/send-packet socket packet reply))
-      (let [pool (core.lease/select-pool-by-ip-address subnet (r.ip-address/->bytes ciaddr))
+      (let [pool (core.lease/select-pool-by-ip-address subnet (r.ip-address/->byte-array ciaddr))
             lease-time (if lease-time-opt
                          (min lease-time-opt (:lease-time pool))
                          (:lease-time pool))
