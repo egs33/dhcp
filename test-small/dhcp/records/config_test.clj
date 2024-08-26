@@ -73,7 +73,10 @@
                                      :reservation []
                                      :options [{:code 1, :type :subnet-mask, :length 4, :value [255 255 255 0]}
                                                {:code 3, :type :router, :length 4, :value [192 168 0 1]}
-                                               {:code 6, :type :domain-server, :length 4, :value [192 168 0 2]}]}]}],
+                                               {:code 6, :type :domain-server, :length 4, :value [192 168 0 2]}]}]
+                            :options [{:code 1, :type :subnet-mask, :length 4, :value [255 255 255 0]}
+                                      {:code 3, :type :router, :length 4, :value [192 168 0 1]}
+                                      {:code 6, :type :domain-server, :length 4, :value [192 168 0 2]}]}],
                  :database {:type "memory"}})
                config)
             "return config is normalized")))
@@ -109,7 +112,12 @@
                                                {:code 190, :length 0, :value []}
                                                {:code 191, :length 3, :value [-1 -1 -1]}
                                                {:code 210, :length 0, :value []}
-                                               {:code 211, :length 8, :value [17 17 17 17 17 17 17 17]}]}]}
+                                               {:code 211, :length 8, :value [17 17 17 17 17 17 17 17]}]}]
+                            :options [{:code 1, :length 4, :type :subnet-mask, :value [255 255 255 128]}
+                                      {:code 3, :length 4, :type :router, :value [192 168 0 1]}
+                                      {:code 6, :length 4, :type :domain-server, :value [192 168 0 2]}
+                                      {:code 190, :length 0 :value []}
+                                      {:code 191, :length 3, :value [-1 -1 -1]}]}
                            {:start-address (r.ip-address/str->ip-address "172.16.0.0")
                             :end-address (r.ip-address/str->ip-address "172.16.255.255")
                             :pools [{:start-address (r.ip-address/str->ip-address "172.16.10.0")
@@ -123,7 +131,14 @@
                                                {:code 6, :type :domain-server, :length 8, :value [172 16 100 1 172 16 100 2]}
                                                {:code 190, :length 0, :value []}
                                                {:code 230, :length 5, :value [1 2 3 4 5]}
-                                               {:code 231, :length 4, :value [10 11 -1 16]}]}]}],
+                                               {:code 231, :length 4, :value [10 11 -1 16]}]}]
+                            :options [{:code 1, :length 4, :type :subnet-mask, :value [255 255 0 0]}
+                                      {:code 3, :length 4, :type :router, :value [172 16 100 0]}
+                                      {:code 6,
+                                       :length 8,
+                                       :type :domain-server,
+                                       :value [172 16 100 1 172 16 100 2]}
+                                      {:code 190, :length 0, :value []}]}],
                  :database {:type "postgresql"
                             :postgresql-option {:jdbc-url "jdbc:postgresql://localhost:5432/dhcp"
                                                 :username "root"

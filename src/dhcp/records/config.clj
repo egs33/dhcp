@@ -33,6 +33,16 @@
                                      unchecked-byte))))
      :ip-address ip-addr}))
 
+(defn- normalize-option [option]
+  (if (string? (:value option))
+    {:code (:code option)
+     :length (/ (count (:value option)) 2)
+     :value (->> (partition 2 (:value option))
+                 (map #(-> (apply str %)
+                           (Integer/parseInt 16)
+                           unchecked-byte)))}
+    option))
+
 (defn- normalize-pools [{:keys [:s-idx :lease-time :start-addr :end-addr :subnet-options]} idx pool]
   (let [lease-time (or (:lease-time pool) lease-time)
         pool-start (r.ip-address/str->ip-address (:start-address pool))
@@ -69,15 +79,7 @@
      :lease-time lease-time
      :reservation (vec reservation)
      :options (->> (concat subnet-options (:options pool))
-                   (mapv (fn [option]
-                           (if (string? (:value option))
-                             {:code (:code option)
-                              :length (/ (count (:value option)) 2)
-                              :value (->> (partition 2 (:value option))
-                                          (map #(-> (apply str %)
-                                                    (Integer/parseInt 16)
-                                                    unchecked-byte)))}
-                             option))))}))
+                   (mapv normalize-option))}))
 
 (defn- normalize-subnet [root-lease-time idx {:keys [:cidr :router :dns :lease-time :options :pools]}]
   (let [[network-addr bits] (str/split cidr #"/")
@@ -101,16 +103,18 @@
                                 (map (comp r.ip-address/->bytes
                                            r.ip-address/str->ip-address))
                                 (apply concat))}
+        subnet-options (concat [subnet-option router-option dns-option]
+                               options)
         pools (map-indexed (partial normalize-pools {:s-idx idx
                                                      :lease-time (or lease-time root-lease-time)
                                                      :start-addr start-addr
                                                      :end-addr end-addr
-                                                     :subnet-options (concat [subnet-option router-option dns-option]
-                                                                             options)})
+                                                     :subnet-options subnet-options})
                            pools)]
     {:start-address start-addr
      :end-address end-addr
-     :pools (vec pools)}))
+     :pools (vec pools)
+     :options (mapv normalize-option subnet-options)}))
 
 (defn- normalize-config [config]
   (let [root-lease-time (:lease-time config)
@@ -281,3 +285,5 @@
             (log/error "config load error" {:errors (ex-data ex)}))
           (catch Exception ex
             (log/error "config load error" {:error ex})))))))
+
+;; "@timestamp":"2024-08-16T15:39:26.578615149Z","@version":"1","message":"handler exception (type: 1) org.postgresql.util.PSQLException: ERROR: operator does not exist: bytea = record\n  Hint: No operator matches the given name and argument types. You might need to add explicit type casts.\n
