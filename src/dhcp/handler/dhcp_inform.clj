@@ -3,11 +3,11 @@
    [clojure.tools.logging :as log]
    [dhcp.components.socket]
    [dhcp.const.dhcp-type :refer [DHCPINFORM DHCPACK]]
+   [dhcp.core.packet :as core.packet]
    [dhcp.handler :as h]
    [dhcp.protocol.database :as p.db]
    [dhcp.records.config :as r.config]
    [dhcp.records.dhcp-message :as r.dhcp-message]
-   [dhcp.core.packet :as core.packet]
    [dhcp.records.ip-address :as r.ip-address])
   (:import
    (dhcp.components.socket

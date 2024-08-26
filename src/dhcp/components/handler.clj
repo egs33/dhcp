@@ -5,8 +5,8 @@
    [dhcp.handler :as h]
    [dhcp.handler.dhcp-decline]
    [dhcp.handler.dhcp-discover]
-   [dhcp.handler.dhcp-release]
    [dhcp.handler.dhcp-inform]
+   [dhcp.handler.dhcp-release]
    [dhcp.handler.dhcp-request]
    [dhcp.protocol.database]
    [dhcp.records.config])
