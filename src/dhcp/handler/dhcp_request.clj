@@ -204,7 +204,7 @@
             lease-time (max lease-time 600)
             _ (p.db/update-lease db
                                  (byte-array chaddr)
-                                 (r.ip-address/->bytes ciaddr)
+                                 (r.ip-address/->byte-array ciaddr)
                                  {:expired-at (.plusSeconds (now) lease-time)})
             _ (log/debugf "DHCPREQUEST lease updated %s" (str chaddr))
             options-by-code (reduce #(assoc %1 (:code %2) %2) {} (:options pool))
