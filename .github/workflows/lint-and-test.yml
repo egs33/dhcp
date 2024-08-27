@@ -61,6 +61,7 @@ jobs:
       - run: clojure -M:dev:test
 
   build:
+    if: github.ref == 'refs/heads/main'
     needs:
       - lint-and-format
       - test
