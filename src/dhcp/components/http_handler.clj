@@ -23,6 +23,9 @@
   (fn [request]
     (handler (assoc request :db db))))
 
+(defn- handler [req]
+  (h/handler req))
+
 (defn make-handler [^IDatabase db]
   (ring/ring-handler
    (ring/router
@@ -45,7 +48,7 @@
                                        [:offset {:optional true}
                                         pos-int?]]}
                   :responses {200 {:body [:map]}}
-                  :handler h/handler}}]
+                  :handler handler}}]
        ["/:lease-id" {:get {:name :get-lease
                             :summary "get lease by id"
                             :parameters {:path [:map
@@ -53,13 +56,13 @@
                                                  int?]]}
                             :responses {200 {:body [:map]}
                                         404 {:body [:map]}}
-                            :handler h/handler}}]]
+                            :handler handler}}]]
       ["/reservation" {:tags #{"reservation"}}
-       ["" {:get {:handler h/handler}
-            :post {:handler h/handler}}]
-       ["/:id" {:get {:handler h/handler}
-                :put {:handler h/handler}
-                :delete {:handler h/handler}}]]]]
+       ["" {:get {:handler handler}
+            :post {:handler handler}}]
+       ["/:id" {:get {:handler handler}
+                :put {:handler handler}
+                :delete {:handler handler}}]]]]
 
     {:validate spec/validate ; enable spec validation for route data
      :exception pretty/exception
