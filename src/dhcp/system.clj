@@ -28,7 +28,8 @@
                                 [:handler])
    :http-handler (component/using (c.http-handler/map->HttpHandler {})
                                   [:db])
-   :http-server (component/using (c.http-server/map->HttpServer {:option {:port 8159
+   :http-server (component/using (c.http-server/map->HttpServer {:enabled (boolean (get-in config [:http-api :enabled]))
+                                                                 :option {:port (get-in config [:http-api :port])
                                                                           :join? false
                                                                           :min-threads 1}})
                                  [:http-handler])))

@@ -6,10 +6,10 @@
    (org.eclipse.jetty.server
     Server)))
 
-(defrecord HttpServer [http-handler option ^Server server]
+(defrecord HttpServer [http-handler enabled option ^Server server]
   component/Lifecycle
   (start [this]
-    (if server
+    (if (and server (not enabled))
       this
       (assoc this :server (jetty9/run-jetty (:handler http-handler) option))))
   (stop [this]
