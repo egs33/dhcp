@@ -46,6 +46,7 @@
       (let [system (component/start (new-system config server-config))]
         (p.db/delete-reservations-by-source (:db system) "config")
         (p.db/add-reservations (:db system) (r.config/reservations server-config))
+        (c.udp-server/blocks-until-close (:udp-server system))
         system))))
 
 (defn stop [system]
