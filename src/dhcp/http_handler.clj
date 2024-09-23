@@ -10,14 +10,14 @@
 
 (defmethod handler nil
   [req]
-  (log/errorf "no name route req:%s" req)
+  (log/errorf "no name route req:%s" (select-keys req [:request-method :uri]))
   {:status 500
    :headers {}
    :body ""})
 
 (defmethod handler :default
   [req]
-  (log/error "no handler req:%s" req)
+  (log/errorf "no handler req:%s" (select-keys req [:request-method :uri]))
   {:status 500
    :headers {}
    :body ""})
