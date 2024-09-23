@@ -1,2 +1,3 @@
 {:logging {:level :info
-           :console {:encoder :json}}}
+           :console {:encoder :json}
+           :overrides {"org.eclipse.jetty" :info}}}
