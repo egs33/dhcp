@@ -74,3 +74,6 @@ database:
     server-name: localhost
     port-number: 5432
 
+httpApi:
+  enabled: false
+  port: 8080
