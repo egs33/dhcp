@@ -187,5 +187,6 @@
 
   IBlockUntilClose
   (blocks-until-close [_]
-    (when-first [s sockets]
-      (blocks-until-close s))))
+    (doseq [s sockets]
+      (when s
+        (blocks-until-close s)))))
