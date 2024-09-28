@@ -22,7 +22,16 @@
        (every? identity
                (map = ba1 ba2))))
 
-(def ^:private hex (HexFormat/of))
+(def ^:private hex (.withUpperCase (HexFormat/of)))
 
-(defn ->str [^bytes b]
+(defn ->str
+  "Converts a byte array to a hex string."
+  [^bytes b]
   (.formatHex hex b))
+
+(def ^:private hex-colon (.withUpperCase (HexFormat/ofDelimiter ":")))
+
+(defn ->colon-str
+  "Converts a byte array to a colon-separated string."
+  [^bytes b]
+  (.formatHex hex-colon b))

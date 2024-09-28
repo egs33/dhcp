@@ -2,6 +2,7 @@
   (:require
    [com.stuartsierra.component :as component]
    [dhcp.http-handler :as h]
+   [dhcp.http-handler.lease :as h.lease]
    [malli.util :as mu]
    [muuntaja.core :as m]
    [reitit.coercion.malli]
@@ -26,6 +27,10 @@
 (defn- handler [req]
   (h/handler req))
 
+(def CommonError
+  [:map {:closed true}
+   [:error string?]])
+
 (defn make-handler [^IDatabase db]
   (ring/ring-handler
    (ring/router
@@ -39,23 +44,21 @@
       ["/lease" {:tags #{"lease"}}
        ["" {:get {:name :get-leases
                   :summary "get all leases"
-                  :parameters {:path [:map
-                                      [:lease-id {:json-schema/example 10}
-                                       int?]]
-                               :query [:map
+                  :parameters {:query [:map
                                        [:limit {:optional true}
                                         pos-int?]
                                        [:offset {:optional true}
                                         pos-int?]]}
-                  :responses {200 {:body [:map]}}
+                  :responses {200 {:body [:map
+                                          [:leases [:sequential h.lease/LeaseJsonSchema]]]}}
                   :handler handler}}]
        ["/:lease-id" {:get {:name :get-lease
                             :summary "get lease by id"
                             :parameters {:path [:map
                                                 [:lease-id {:json-schema/example 10}
                                                  int?]]}
-                            :responses {200 {:body [:map]}
-                                        404 {:body [:map]}}
+                            :responses {200 {:body h.lease/LeaseJsonSchema}
+                                        404 {:body CommonError}}
                             :handler handler}}]]
       ["/reservation" {:tags #{"reservation"}}
        ["" {:get {:handler handler}
