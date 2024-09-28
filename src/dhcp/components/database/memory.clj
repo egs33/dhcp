@@ -47,7 +47,9 @@
 
   (add-lease [_ lease]
     (db.common/assert-lease lease)
-    (swap! state #(update % :lease conj lease)))
+    (let [lease (assoc lease :id (rand-int Integer/MAX_VALUE))]
+      (swap! state #(update % :lease conj lease))
+      lease))
   (get-all-leases [_]
     (:lease @state))
   (find-leases-by-hw-address [_ hw-address]
@@ -60,6 +62,10 @@
           end (u.bytes/bytes->number end-address)]
       (->> (:lease @state)
            (filter #(<= start (u.bytes/bytes->number (:ip-address %)) end)))))
+  (find-lease-by-id [_ lease-id]
+    (->> (:lease @state)
+         (filter #(= (:id %) lease-id))
+         first))
   (update-lease [_  hw-address ip-address values]
     (swap! state
            (fn [current]

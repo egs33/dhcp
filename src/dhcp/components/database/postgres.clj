@@ -137,6 +137,12 @@
         (sql/where [:>= :ip-address start-address]
                    [:<= :ip-address end-address])
         (->> (fetch datasource))))
+  (find-lease-by-id [_ lease-id]
+    (-> (sql/select :*)
+        (sql/from :lease)
+        (sql/where [:= :id lease-id])
+        (->> (fetch datasource)
+             first)))
   (update-lease [_  hw-address ip-address values]
     (-> (sql/update :lease)
         (sql/set values)
