@@ -20,9 +20,9 @@
    [:hostname string?]
    [:lease-time pos-int?]
    [:status [:enum "offer" "lease"]]
-   [:offered-at :time/instant]
-   [:leased-at [:maybe :time/instant]]
-   [:expired-at :time/instant]])
+   [:offered-at {:json-schema/type "string"} :time/instant]
+   [:leased-at {:json-schema/oneOf [{:type "string"} {:type "null"}]} [:maybe :time/instant]]
+   [:expired-at {:json-schema/type "string"} :time/instant]])
 
 (defmethod h/handler :get-leases
   [{:keys [:db]}]
