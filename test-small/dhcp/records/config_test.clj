@@ -145,7 +145,8 @@
                                                 :password "p@ssw0rd"
                                                 :database-name "dhcp"
                                                 :server-name "localhost"
-                                                :port-number 5432}}})
+                                                :port-number 5432}}
+                 :http-api {:enabled false :port 8080}})
                config)
             "return config is normalized")))))
 

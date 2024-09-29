@@ -7,6 +7,8 @@
    [dhcp.components.database.memory :as db.mem]
    [dhcp.components.database.postgres :as db.pg]
    [dhcp.components.handler :as c.handler]
+   [dhcp.components.http-handler :as c.http-handler]
+   [dhcp.components.http-server :as c.http-server]
    [dhcp.components.udp-server :as c.udp-server]
    [dhcp.protocol.database :as p.db]
    [dhcp.records.config :as r.config]
@@ -23,7 +25,14 @@
              [:db])
    :udp-server (component/using (c.udp-server/map->UdpServer {:config config
                                                               :listen-only? listen-only})
-                                [:handler])))
+                                [:handler])
+   :http-handler (component/using (c.http-handler/map->HttpHandler {})
+                                  [:db])
+   :http-server (component/using (c.http-server/map->HttpServer {:enabled (boolean (get-in config [:http-api :enabled]))
+                                                                 :option {:port (get-in config [:http-api :port])
+                                                                          :join? false
+                                                                          :min-threads 1}})
+                                 [:http-handler])))
 
 (defn start [options]
   (let [config (-> (aero/read-config (io/resource "config.edn") {:profile :prod})
@@ -37,6 +46,7 @@
       (let [system (component/start (new-system config server-config))]
         (p.db/delete-reservations-by-source (:db system) "config")
         (p.db/add-reservations (:db system) (r.config/reservations server-config))
+        (c.udp-server/blocks-until-close (:udp-server system))
         system))))
 
 (defn stop [system]

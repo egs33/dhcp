@@ -2,7 +2,6 @@
   (:gen-class)
   (:require
    [clojure.tools.cli :as cli]
-   [dhcp.components.udp-server :as c.udp-server]
    [dhcp.system :as system]))
 
 (def cli-options
@@ -30,6 +29,4 @@
           1)
 
       :else
-      (when-let [{:keys [:udp-server]} (system/start options)]
-        ;; block until the server is stopped
-        (c.udp-server/blocks-until-close udp-server)))))
+      (system/start options))))

@@ -54,7 +54,7 @@
                     :options [{:code 1, :type :subnet-mask, :length 4, :value [255 255 255 0]}
                               {:code 3, :type :router, :length 4, :value [192 168 0 1]}]})
 
-(deftest handler-dhcp-request-test
+(deftest handler-dhcp-inform-test
   (testing "no subnet definition"
     (let [db (db.mem/new-memory-database)]
       (is (nil? (h/handler th/socket-mock

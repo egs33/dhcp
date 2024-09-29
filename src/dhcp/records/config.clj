@@ -120,9 +120,9 @@
   (let [root-lease-time (:lease-time config)
         subnets (map-indexed (partial normalize-subnet root-lease-time)
                              (:subnets config))]
-    {:interfaces (:interfaces config)
-     :subnets (vec subnets)
-     :database (:database config)}))
+    (-> config
+        (select-keys [:interfaces :database :http-api])
+        (assoc :subnets (vec subnets)))))
 
 (def ^:private CidrSchema
   [:and
@@ -198,7 +198,11 @@
         [:password {:optional true} :string]
         [:database-name {:optional true} :string]
         [:server-name {:optional true} :string]
-        [:port-number {:optional true} pos-int?]]]]]]])
+        [:port-number {:optional true} pos-int?]]]]]]
+   [:http-api {:optional true}
+    [:map {:closed true}
+     [:enabled boolean?]
+     [:port pos-int?]]]])
 
 (defn- flat-error
   [error]
@@ -285,5 +289,3 @@
             (log/error "config load error" {:errors (ex-data ex)}))
           (catch Exception ex
             (log/error "config load error" {:error ex})))))))
-
-;; "@timestamp":"2024-08-16T15:39:26.578615149Z","@version":"1","message":"handler exception (type: 1) org.postgresql.util.PSQLException: ERROR: operator does not exist: bytea = record\n  Hint: No operator matches the given name and argument types. You might need to add explicit type casts.\n

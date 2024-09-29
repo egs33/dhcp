@@ -239,9 +239,10 @@
                            :status "lease"
                            :leased-at mock-now
                            :expired-at (.plusSeconds mock-now 3600))]
-                   (map th/array->vec-recursively
-                        (p.db/find-leases-by-ip-address-range
-                         db (byte-array [192 168 0 100]) (byte-array [192 168 0 100]))))))))))
+                   (->> (p.db/find-leases-by-ip-address-range
+                         db (byte-array [192 168 0 100]) (byte-array [192 168 0 100]))
+                        (map #(dissoc % :id))
+                        (map th/array->vec-recursively)))))))))
   (testing "request-in-init-reboot"
            ;; TODO
            ))

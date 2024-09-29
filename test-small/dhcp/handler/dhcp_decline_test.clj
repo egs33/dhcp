@@ -78,5 +78,5 @@
                :lease-time 3600
                :status "declined"
                :leased-at nil}]
-             (th/array->vec-recursively (map #(dissoc % :offered-at :expired-at)
+             (th/array->vec-recursively (map #(dissoc % :offered-at :expired-at :id)
                                              (p.db/get-all-leases db))))))))
