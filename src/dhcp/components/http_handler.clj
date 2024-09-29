@@ -3,6 +3,7 @@
    [com.stuartsierra.component :as component]
    [dhcp.http-handler :as h]
    [dhcp.http-handler.lease :as h.lease]
+   [dhcp.http-handler.reservation :as h.reservation]
    [malli.util :as mu]
    [muuntaja.core :as m]
    [reitit.coercion.malli]
@@ -61,11 +62,25 @@
                                         404 {:body CommonError}}
                             :handler handler}}]]
       ["/reservation" {:tags #{"reservation"}}
-       ["" {:get {:handler handler}
-            :post {:handler handler}}]
-       ["/:id" {:get {:handler handler}
-                :put {:handler handler}
-                :delete {:handler handler}}]]]]
+       ["" {:get {:name :get-reservations
+                  :summary "get all reservations"
+                  :parameters {:query [:map
+                                       [:limit {:optional true}
+                                        pos-int?]
+                                       [:offset {:optional true}
+                                        pos-int?]]}
+                  :responses {200 {:body [:map
+                                          [:reservations [:sequential h.reservation/ReservationJsonSchema]]]}}
+                  :handler handler}
+            :post {:name :add-reservation
+                   :summary "add reservation"
+                   :parameters {:body (-> h.reservation/ReservationJsonSchema
+                                          (mu/dissoc :source))}
+                   :responses {201 {:body h.reservation/ReservationJsonSchema}}
+                   :handler handler}}]
+       #_["/:id" {:get {:handler handler}
+                  :put {:handler handler}
+                  :delete {:handler handler}}]]]]
 
     {:validate spec/validate ; enable spec validation for route data
      :exception pretty/exception

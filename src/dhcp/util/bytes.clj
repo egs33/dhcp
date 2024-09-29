@@ -1,4 +1,6 @@
 (ns dhcp.util.bytes
+  (:require
+   [clojure.string :as str])
   (:import
    (java.util
     HexFormat)))
@@ -28,6 +30,13 @@
   "Converts a byte array to a hex string."
   [^bytes b]
   (.formatHex hex b))
+
+(defn parse
+  [s]
+  (-> s
+      (str/replace ":" "")
+      str/upper-case
+      (->> (.parseHex hex))))
 
 (def ^:private hex-colon (.withUpperCase (HexFormat/ofDelimiter ":")))
 
