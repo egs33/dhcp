@@ -24,6 +24,8 @@
 
 (def ReservationJsonSchema
   [:map {:closed true}
+   [:id {:json-schema/example 1}
+    pos-int?]
    [:hw-address {:json-schema/example "00:00:00:00:00:00"}
     [:and
      string?
