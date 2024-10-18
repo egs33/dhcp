@@ -25,7 +25,9 @@
                   {:hw-address (th/byte-vec [10 20 30])
                    :ip-address (th/byte-vec [172 16 0 20])
                    :source "api"}]
-                 (th/array->vec-recursively (p.db/get-all-reservations db)))))
+                 (->> (p.db/get-all-reservations db)
+                      (map #(dissoc % :id))
+                      th/array->vec-recursively))))
         (testing "add no reservations"
           (p.db/add-reservations db [])
           (is (= [{:hw-address (th/byte-vec [1 2 3 4 5 6])
@@ -34,7 +36,9 @@
                   {:hw-address (th/byte-vec [10 20 30])
                    :ip-address (th/byte-vec [172 16 0 20])
                    :source "api"}]
-                 (th/array->vec-recursively (p.db/get-all-reservations db)))))
+                 (->> (p.db/get-all-reservations db)
+                      (map #(dissoc % :id))
+                      th/array->vec-recursively))))
         (testing "add more reservations"
           (p.db/add-reservations db [{:hw-address (byte-array [7 8 9 10 11 12])
                                       :ip-address (byte-array [192 168 0 5])
@@ -54,13 +58,15 @@
                   {:hw-address (th/byte-vec [10 20 31])
                    :ip-address (th/byte-vec [172 16 0 21])
                    :source "api"}]
-                 (th/array->vec-recursively (p.db/get-all-reservations db)))))
+                 (->> (p.db/get-all-reservations db)
+                      (map #(dissoc % :id))
+                      th/array->vec-recursively))))
         (testing "throw exception when adding invalid reservation"
           (testing "empty hw-address"
             (is (thrown? IllegalArgumentException
-                  (p.db/add-reservations db [{:hw-address (byte-array [])
-                                              :ip-address (byte-array [192 168 0 1])
-                                              :source "config"}])))))))
+                         (p.db/add-reservations db [{:hw-address (byte-array [])
+                                                     :ip-address (byte-array [192 168 0 1])
+                                                     :source "config"}])))))))
     (testing "find-tests"
       (let [db (sut/new-memory-database)]
         (p.db/add-reservations db [{:hw-address (byte-array [1 2 3 4 5 6])
@@ -80,8 +86,9 @@
             (is (= [{:hw-address (th/byte-vec [10 20 30])
                      :ip-address (th/byte-vec [172 16 0 20])
                      :source "api"}]
-                   (th/array->vec-recursively
-                    (p.db/find-reservations-by-hw-address db (byte-array [10 20 30]))))))
+                   (->> (p.db/find-reservations-by-hw-address db (byte-array [10 20 30]))
+                        (map #(dissoc % :id))
+                        th/array->vec-recursively))))
           (testing "hit 2 entry"
             (is (= [{:hw-address (th/byte-vec [1 2 3 4 5 6])
                      :ip-address (th/byte-vec [192 168 0 1])
@@ -89,8 +96,9 @@
                     {:hw-address (th/byte-vec [1 2 3 4 5 6])
                      :ip-address (th/byte-vec [172 16 1 1])
                      :source "config"}]
-                   (th/array->vec-recursively
-                    (p.db/find-reservations-by-hw-address db (byte-array [1 2 3 4 5 6])))))))
+                   (->> (p.db/find-reservations-by-hw-address db (byte-array [1 2 3 4 5 6]))
+                        (map #(dissoc % :id))
+                        th/array->vec-recursively)))))
         (testing "find-reservations-by-ip-address-range-test"
           (testing "hit no entry"
             (is (= []
@@ -100,9 +108,10 @@
             (is (= [{:hw-address (th/byte-vec [1 2 3 4 5 6])
                      :ip-address (th/byte-vec [192 168 0 1])
                      :source "config"}]
-                   (th/array->vec-recursively
-                    (p.db/find-reservations-by-ip-address-range
-                     db (byte-array [192 168 0 0]) (byte-array [192 168 0 255]))))))
+                   (->> (p.db/find-reservations-by-ip-address-range
+                         db (byte-array [192 168 0 0]) (byte-array [192 168 0 255]))
+                        (map #(dissoc % :id))
+                        th/array->vec-recursively))))
           (testing "hit 2 entry"
             (is (= [{:hw-address (th/byte-vec [10 20 30])
                      :ip-address (th/byte-vec [172 16 0 20])
@@ -110,9 +119,10 @@
                     {:hw-address (th/byte-vec [1 2 3 4 5 6])
                      :ip-address (th/byte-vec [172 16 1 1])
                      :source "config"}]
-                   (th/array->vec-recursively
-                    (p.db/find-reservations-by-ip-address-range
-                     db (byte-array [172 16 0 0]) (byte-array [172 16 15 255]))))))
+                   (->> (p.db/find-reservations-by-ip-address-range
+                         db (byte-array [172 16 0 0]) (byte-array [172 16 15 255]))
+                        (map #(dissoc % :id))
+                        th/array->vec-recursively))))
           (testing "start and end are inclusive"
             (is (= [{:hw-address (th/byte-vec [1 2 3 4 5 6])
                      :ip-address (th/byte-vec [192 168 0 1])
@@ -120,9 +130,10 @@
                     {:hw-address (th/byte-vec [1 2 3 4 5 6])
                      :ip-address (th/byte-vec [172 16 1 1])
                      :source "config"}]
-                   (th/array->vec-recursively
-                    (p.db/find-reservations-by-ip-address-range
-                     db (byte-array [172 16 1 1]) (byte-array [192 168 0 1])))))))))
+                   (->> (p.db/find-reservations-by-ip-address-range
+                         db (byte-array [172 16 1 1]) (byte-array [192 168 0 1]))
+                        (map #(dissoc % :id))
+                        th/array->vec-recursively)))))))
     (testing "delete-reservation-tests"
       (let [db (sut/new-memory-database)]
         (p.db/add-reservations db [{:hw-address (byte-array [1 2 3 4 5 6])
@@ -148,7 +159,9 @@
                   {:hw-address (th/byte-vec [1 2 3 4 5 6])
                    :ip-address (th/byte-vec [172 16 1 1])
                    :source "config"}]
-                 (th/array->vec-recursively (p.db/get-all-reservations db)))))))
+                 (->> (p.db/get-all-reservations db)
+                      (map #(dissoc % :id))
+                      th/array->vec-recursively))))))
     (testing "delete-reservations-by-source"
       (let [db (sut/new-memory-database)]
         (p.db/add-reservations db [{:hw-address (byte-array [1 2 3 4 5 6])
@@ -165,7 +178,9 @@
           (is (= [{:hw-address (th/byte-vec [10 20 30])
                    :ip-address (th/byte-vec [172 16 0 20])
                    :source "api"}]
-                 (th/array->vec-recursively (p.db/get-all-reservations db))))))))
+                 (->> (p.db/get-all-reservations db)
+                      (map #(dissoc % :id))
+                      th/array->vec-recursively)))))))
   (testing "lease-tests"
     (testing "add-and-get-leases-test"
       (let [db (sut/new-memory-database)
@@ -227,7 +242,7 @@
         (testing "throw exception when adding invalid lease"
           (testing "empty hw-address"
             (is (thrown? IllegalArgumentException
-                  (p.db/add-lease db {})))))))
+                         (p.db/add-lease db {})))))))
     (testing "find-tests"
       (let [db (sut/new-memory-database)
             now (Instant/now)
@@ -348,7 +363,7 @@
                    (p.db/find-lease-by-id db (:id lease1)))))))
       (testing "update-lease-test"
                ;; TODO
-               )
+        )
       (testing "delete-lease-tests"
         (let [db (sut/new-memory-database)
               now (Instant/now)]

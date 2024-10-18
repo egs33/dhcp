@@ -40,10 +40,11 @@ VALUES
 
 --;;
 CREATE TABLE reservation (
+  id bigserial PRIMARY KEY,
   hw_address bytea NOT NULL CHECK (LENGTH(hw_address) <= 16),
   ip_address bytea NOT NULL CHECK (LENGTH(ip_address) <= 4),
   source TEXT NOT NULL REFERENCES reservation_source (value),
-  PRIMARY KEY (hw_address, ip_address, source)
+  UNIQUE (hw_address, ip_address, source)
 );
 
 --;;

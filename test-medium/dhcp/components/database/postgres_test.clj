@@ -54,7 +54,9 @@
               {:hw-address (th/byte-vec [10 20 30])
                :ip-address (th/byte-vec [172 16 0 20])
                :source "api"}]
-             (th/array->vec-recursively (p.db/get-all-reservations db)))))
+             (->> (p.db/get-all-reservations db)
+                  (map #(dissoc % :id))
+                  th/array->vec-recursively))))
     (testing "add no reservations"
       (p.db/add-reservations db [])
       (is (= [{:hw-address (th/byte-vec [1 2 3 4 5 6])
@@ -63,7 +65,9 @@
               {:hw-address (th/byte-vec [10 20 30])
                :ip-address (th/byte-vec [172 16 0 20])
                :source "api"}]
-             (th/array->vec-recursively (p.db/get-all-reservations db)))))
+             (->> (p.db/get-all-reservations db)
+                  (map #(dissoc % :id))
+                  th/array->vec-recursively))))
     (testing "add more reservations"
       (p.db/add-reservations db [{:hw-address (byte-array [7 8 9 10 11 12])
                                   :ip-address (byte-array [192 168 0 5])
@@ -83,13 +87,15 @@
               {:hw-address (th/byte-vec [10 20 31])
                :ip-address (th/byte-vec [172 16 0 21])
                :source "api"}]
-             (th/array->vec-recursively (p.db/get-all-reservations db)))))
+             (->> (p.db/get-all-reservations db)
+                  (map #(dissoc % :id))
+                  th/array->vec-recursively))))
     (testing "throw exception when adding invalid reservation"
       (testing "empty hw-address"
         (is (thrown? IllegalArgumentException
-              (p.db/add-reservations db [{:hw-address (byte-array [])
-                                          :ip-address (byte-array [192 168 0 1])
-                                          :source "config"}])))))))
+                     (p.db/add-reservations db [{:hw-address (byte-array [])
+                                                 :ip-address (byte-array [192 168 0 1])
+                                                 :source "config"}])))))))
 
 (deftest find-reservation-tests
   (let [db @db-atom]
@@ -110,8 +116,9 @@
         (is (= [{:hw-address (th/byte-vec [10 20 30])
                  :ip-address (th/byte-vec [172 16 0 20])
                  :source "api"}]
-               (th/array->vec-recursively
-                (p.db/find-reservations-by-hw-address db (byte-array [10 20 30]))))))
+               (->> (p.db/find-reservations-by-hw-address db (byte-array [10 20 30]))
+                    (map #(dissoc % :id))
+                    th/array->vec-recursively))))
       (testing "hit 2 entry"
         (is (= [{:hw-address (th/byte-vec [1 2 3 4 5 6])
                  :ip-address (th/byte-vec [192 168 0 1])
@@ -119,8 +126,9 @@
                 {:hw-address (th/byte-vec [1 2 3 4 5 6])
                  :ip-address (th/byte-vec [172 16 1 1])
                  :source "config"}]
-               (th/array->vec-recursively
-                (p.db/find-reservations-by-hw-address db (byte-array [1 2 3 4 5 6])))))))
+               (->> (p.db/find-reservations-by-hw-address db (byte-array [1 2 3 4 5 6]))
+                    (map #(dissoc % :id))
+                    th/array->vec-recursively)))))
     (testing "find-reservations-by-ip-address-range-test"
       (testing "hit no entry"
         (is (= []
@@ -130,9 +138,10 @@
         (is (= [{:hw-address (th/byte-vec [1 2 3 4 5 6])
                  :ip-address (th/byte-vec [192 168 0 1])
                  :source "config"}]
-               (th/array->vec-recursively
-                (p.db/find-reservations-by-ip-address-range
-                 db (byte-array [192 168 0 0]) (byte-array [192 168 0 255]))))))
+               (->> (p.db/find-reservations-by-ip-address-range
+                     db (byte-array [192 168 0 0]) (byte-array [192 168 0 255]))
+                    (map #(dissoc % :id))
+                    th/array->vec-recursively))))
       (testing "hit 2 entry"
         (is (= [{:hw-address (th/byte-vec [10 20 30])
                  :ip-address (th/byte-vec [172 16 0 20])
@@ -140,9 +149,10 @@
                 {:hw-address (th/byte-vec [1 2 3 4 5 6])
                  :ip-address (th/byte-vec [172 16 1 1])
                  :source "config"}]
-               (th/array->vec-recursively
-                (p.db/find-reservations-by-ip-address-range
-                 db (byte-array [172 16 0 0]) (byte-array [172 16 15 255]))))))
+               (->> (p.db/find-reservations-by-ip-address-range
+                     db (byte-array [172 16 0 0]) (byte-array [172 16 15 255]))
+                    (map #(dissoc % :id))
+                    th/array->vec-recursively))))
       (testing "start and end are inclusive"
         (is (= [{:hw-address (th/byte-vec [1 2 3 4 5 6])
                  :ip-address (th/byte-vec [192 168 0 1])
@@ -150,9 +160,10 @@
                 {:hw-address (th/byte-vec [1 2 3 4 5 6])
                  :ip-address (th/byte-vec [172 16 1 1])
                  :source "config"}]
-               (th/array->vec-recursively
-                (p.db/find-reservations-by-ip-address-range
-                 db (byte-array [172 16 1 1]) (byte-array [192 168 0 1])))))))))
+               (->> (p.db/find-reservations-by-ip-address-range
+                     db (byte-array [172 16 1 1]) (byte-array [192 168 0 1]))
+                    (map #(dissoc % :id))
+                    th/array->vec-recursively)))))))
 
 (deftest delete-reservation-test
   (let [db @db-atom]
@@ -179,7 +190,9 @@
               {:hw-address (th/byte-vec [1 2 3 4 5 6])
                :ip-address (th/byte-vec [172 16 1 1])
                :source "config"}]
-             (th/array->vec-recursively (p.db/get-all-reservations db)))))))
+             (->> (p.db/get-all-reservations db)
+                  (map #(dissoc % :id))
+                  th/array->vec-recursively))))))
 
 (deftest delete-reservations-by-source-test
   (let [db @db-atom]
@@ -196,7 +209,9 @@
     (is (= [{:hw-address (th/byte-vec [10 20 30])
              :ip-address (th/byte-vec [172 16 0 20])
              :source "api"}]
-           (th/array->vec-recursively (p.db/get-all-reservations db))))))
+           (->> (p.db/get-all-reservations db)
+                 (map #(dissoc % :id))
+                th/array->vec-recursively )))))
 
 (deftest add-and-get-leases-test
   (let [db @db-atom
@@ -258,7 +273,7 @@
     (testing "throw exception when adding invalid lease"
       (testing "empty hw-address"
         (is (thrown? IllegalArgumentException
-              (p.db/add-lease db {})))))))
+                     (p.db/add-lease db {})))))))
 
 (deftest find-lease-tests
   (let [db @db-atom

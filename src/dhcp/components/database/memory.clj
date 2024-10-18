@@ -15,7 +15,8 @@
   (add-reservations [_ reservations]
     (doseq [reservation reservations]
       (db.common/assert-reservation reservation))
-    (swap! state #(update % :reservation into reservations)))
+    (let [reservations (mapv #(assoc % :id (rand-int Integer/MAX_VALUE)) reservations)]
+      (swap! state #(update % :reservation into reservations))))
   (get-all-reservations [_]
     (:reservation @state))
   (find-reservations-by-hw-address [_  hw-address]
