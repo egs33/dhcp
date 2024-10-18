@@ -19,7 +19,7 @@
   ISocket
   (open [_]
     (let [socket (RawSocket.)]
-      (.open socket (RawSocket/AF_PACKET) (RawSocket/ETH_P_IP))
+      (.open socket RawSocket/AF_PACKET RawSocket/ETH_P_IP)
       (.bindAfPacket socket device-name)
       (reset! socket-atom socket)))
   (close [_]
