@@ -29,3 +29,11 @@
   (proxy [RawSocket] []
     (write [^InetAddress _address ^bytes _data]
       (throw (ex-info "should not be called" {})))))
+
+(defn create-random-mock
+  ([]
+   (create-random-mock 0))
+  ([start-value]
+   (let [counter (atom start-value)]
+     (fn [_]
+       (swap! counter inc)))))
