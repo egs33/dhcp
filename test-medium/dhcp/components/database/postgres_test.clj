@@ -93,9 +93,9 @@
     (testing "throw exception when adding invalid reservation"
       (testing "empty hw-address"
         (is (thrown? IllegalArgumentException
-                     (p.db/add-reservations db [{:hw-address (byte-array [])
-                                                 :ip-address (byte-array [192 168 0 1])
-                                                 :source "config"}])))))))
+              (p.db/add-reservations db [{:hw-address (byte-array [])
+                                          :ip-address (byte-array [192 168 0 1])
+                                          :source "config"}])))))))
 
 (deftest find-reservation-tests
   (let [db @db-atom]
@@ -210,8 +210,8 @@
              :ip-address (th/byte-vec [172 16 0 20])
              :source "api"}]
            (->> (p.db/get-all-reservations db)
-                 (map #(dissoc % :id))
-                th/array->vec-recursively )))))
+                (map #(dissoc % :id))
+                th/array->vec-recursively)))))
 
 (deftest add-and-get-leases-test
   (let [db @db-atom
@@ -273,7 +273,7 @@
     (testing "throw exception when adding invalid lease"
       (testing "empty hw-address"
         (is (thrown? IllegalArgumentException
-                     (p.db/add-lease db {})))))))
+              (p.db/add-lease db {})))))))
 
 (deftest find-lease-tests
   (let [db @db-atom

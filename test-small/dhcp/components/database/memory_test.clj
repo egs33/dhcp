@@ -64,9 +64,9 @@
         (testing "throw exception when adding invalid reservation"
           (testing "empty hw-address"
             (is (thrown? IllegalArgumentException
-                         (p.db/add-reservations db [{:hw-address (byte-array [])
-                                                     :ip-address (byte-array [192 168 0 1])
-                                                     :source "config"}])))))))
+                  (p.db/add-reservations db [{:hw-address (byte-array [])
+                                              :ip-address (byte-array [192 168 0 1])
+                                              :source "config"}])))))))
     (testing "find-tests"
       (let [db (sut/new-memory-database)]
         (p.db/add-reservations db [{:hw-address (byte-array [1 2 3 4 5 6])
@@ -242,7 +242,7 @@
         (testing "throw exception when adding invalid lease"
           (testing "empty hw-address"
             (is (thrown? IllegalArgumentException
-                         (p.db/add-lease db {})))))))
+                  (p.db/add-lease db {})))))))
     (testing "find-tests"
       (let [db (sut/new-memory-database)
             now (Instant/now)
@@ -363,7 +363,7 @@
                    (p.db/find-lease-by-id db (:id lease1)))))))
       (testing "update-lease-test"
                ;; TODO
-        )
+               )
       (testing "delete-lease-tests"
         (let [db (sut/new-memory-database)
               now (Instant/now)]
