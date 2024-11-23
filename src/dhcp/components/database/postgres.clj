@@ -164,7 +164,12 @@
         (sql/where [:= :hw-address hw-address]
                    [:>= :ip-address start-address]
                    [:<= :ip-address end-address])
-        (->> (execute-batch datasource)))))
+        (->> (execute-batch datasource))))
+
+  (transaction [this f]
+    #_:clj-kondo/ignore
+    (jdbc/with-transaction [datasource db]
+                           (f (assoc this :datasource db)))))
 
 (defn new-postgres-database [option]
   (->PostgresDatabase option nil))

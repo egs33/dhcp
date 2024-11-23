@@ -1,5 +1,6 @@
 (ns dhcp.components.database.memory
   (:require
+   [clojure.tools.logging :as log]
    [dhcp.components.database.common :as db.common]
    [dhcp.protocol.database :as p.db]
    [dhcp.util.bytes :as u.bytes])
@@ -104,7 +105,11 @@
                                        (<= s-ip-value
                                            (u.bytes/bytes->number (:ip-address %))
                                            e-ip-value))
-                                 coll))))))))
+                                 coll)))))))
+
+  (transaction [this f]
+    (log/warn "MemoryDatabase does not support transaction")
+    (f this)))
 
 (defn new-memory-database []
   (->MemoryDatabase (atom {:reservation []

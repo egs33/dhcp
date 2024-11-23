@@ -16,4 +16,6 @@
   (find-leases-by-ip-address-range [this ^bytes start-address ^bytes end-address])
   (find-lease-by-id [this lease-id])
   (update-lease [this ^bytes hw-address ^bytes ip-address values])
-  (delete-lease [this ^bytes hw-address ^bytes start-address ^bytes end-address]))
+  (delete-lease [this ^bytes hw-address ^bytes start-address ^bytes end-address])
+
+  (transaction [this f]))
