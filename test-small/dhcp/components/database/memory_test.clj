@@ -147,6 +147,29 @@
                          db (byte-array [172 16 1 1]) (byte-array [192 168 0 1]))
                         (map #(dissoc % :id))
                         th/array->vec-recursively)))))))
+    (testing "delete-reservation-by-id"
+      (let [db (sut/new-memory-database)]
+        (p.db/add-reservations db [{:hw-address (byte-array [1 2 3 4 5 6])
+                                    :ip-address (byte-array [192 168 0 1])
+                                    :source "config"}
+                                   {:hw-address (byte-array [10 20 30])
+                                    :ip-address (byte-array [172 16 0 20])
+                                    :source "api"}
+                                   {:hw-address (byte-array [1 2 3 4 5 6])
+                                    :ip-address (byte-array [172 16 1 1])
+                                    :source "config"}])
+        (testing "delete no entry"
+          (p.db/delete-reservation-by-id db 0)
+          (is (= 3
+                 (count (p.db/get-all-reservations db)))))
+        (testing "delete 1 entry"
+          (let [id (-> (p.db/find-reservations-by-hw-address db (byte-array [10 20 30]))
+                       first
+                       :id)]
+            (p.db/delete-reservation db id)
+            (is (nil? (p.db/find-reservation-by-id db id)))
+            (is (= 2
+                   (count (p.db/get-all-reservations db))))))))
     (testing "delete-reservation-tests"
       (let [db (sut/new-memory-database)]
         (p.db/add-reservations db [{:hw-address (byte-array [1 2 3 4 5 6])

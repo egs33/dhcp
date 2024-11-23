@@ -114,6 +114,10 @@
         (sql/where [:>= :ip-address start-address]
                    [:<= :ip-address end-address])
         (->> (fetch datasource))))
+  (delete-reservation-by-id [_ id]
+    (-> (sql/delete-from :reservation)
+        (sql/where [:= :id id])
+        (->> (execute-batch datasource))))
   (delete-reservation [_ hw-address]
     (-> (sql/delete-from :reservation)
         (sql/where [:= :hw-address hw-address])

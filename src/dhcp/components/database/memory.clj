@@ -33,6 +33,13 @@
           end (u.bytes/bytes->number end-address)]
       (->> (:reservation @state)
            (filter #(<= start (u.bytes/bytes->number (:ip-address %)) end)))))
+  (delete-reservation-by-id [_ id]
+    (swap! state (fn [current]
+                   (update current
+                           :reservation
+                           (fn [coll]
+                             (remove #(= (:id %) id)
+                                     coll))))))
   (delete-reservation [_ hw-address]
     (let [value (u.bytes/bytes->number hw-address)]
       (swap! state (fn [current]
