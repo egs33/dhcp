@@ -1,5 +1,6 @@
 (ns dhcp.components.http-handler
   (:require
+   [clojure.tools.logging :as log]
    [com.stuartsierra.component :as component]
    [dhcp.http-handler :as h]
    [dhcp.http-handler.lease :as h.lease]
@@ -31,6 +32,14 @@
 (def CommonError
   [:map {:closed true}
    [:error string?]])
+
+(def exception-middleware
+  (exception/create-exception-middleware
+   (merge
+    exception/default-handlers
+    {::exception/wrap (fn [handler e request]
+                        (log/errorf "%s" e)
+                        (handler e request))})))
 
 (defn make-handler [^IDatabase db]
   (ring/ring-handler
@@ -96,7 +105,7 @@
                          parameters/parameters-middleware
                          muuntaja/format-negotiate-middleware
                          muuntaja/format-response-middleware
-                         exception/exception-middleware
+                         exception-middleware
                          muuntaja/format-request-middleware
                          coercion/coerce-response-middleware
                          coercion/coerce-request-middleware
