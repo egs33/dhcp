@@ -68,6 +68,7 @@
        :body {:error "reservation is from config, cannot be edited"}}
       (p.db/transaction db
                         (fn [db]
+                          ;; TODO fix preserve id
                           (p.db/delete-reservation-by-id db (:id reservation))
                           (let [[r] (p.db/add-reservations db [(assoc (:body parameters) :source "api")])]
                             {:status 200
