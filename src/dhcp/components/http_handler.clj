@@ -84,7 +84,8 @@
             :post {:name :add-reservation
                    :summary "add reservation"
                    :parameters {:body (-> h.reservation/ReservationJsonSchema
-                                          (mu/dissoc :source :id))}
+                                          (mu/dissoc :source)
+                                          (mu/dissoc :id))}
                    :responses {201 {:body h.reservation/ReservationJsonSchema}}
                    :handler handler}}]
        ["/:id" {:parameters {:path [:map
@@ -97,7 +98,8 @@
                 :put {:name :edit-reservation
                       :summary "edit reservation"
                       :parameters {:body (-> h.reservation/ReservationJsonSchema
-                                             (mu/dissoc :source))}
+                                             (mu/dissoc :source)
+                                             (mu/dissoc :id))}
                       :responses {200 {:body h.reservation/ReservationJsonSchema}
                                   404 {:body CommonError}
                                   409 {:body CommonError}}
