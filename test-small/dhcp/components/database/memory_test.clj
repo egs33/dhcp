@@ -78,6 +78,19 @@
                                    {:hw-address (byte-array [1 2 3 4 5 6])
                                     :ip-address (byte-array [172 16 1 1])
                                     :source "config"}])
+        (testing "find-reservation-by-id"
+          (testing "hit no entry"
+            (is (nil? (p.db/find-reservation-by-id db 0))))
+          (testing "hit"
+            (let [id (-> (p.db/find-reservations-by-hw-address db (byte-array [10 20 30]))
+                         first
+                         :id)]
+              (is (= {:hw-address (th/byte-vec [10 20 30])
+                      :ip-address (th/byte-vec [172 16 0 20])
+                      :source "api"
+                      :id id}
+                     (->> (p.db/find-reservation-by-id db id)
+                          th/array->vec-recursively))))))
         (testing "find-reservations-by-hw-address-test"
           (testing "hit no entry"
             (is (= []
