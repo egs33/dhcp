@@ -87,9 +87,26 @@
                                           (mu/dissoc :source))}
                    :responses {201 {:body h.reservation/ReservationJsonSchema}}
                    :handler handler}}]
-       #_["/:id" {:get {:handler handler}
-                  :put {:handler handler}
-                  :delete {:handler handler}}]]]]
+       ["/:id" {:parameters {:path [:map
+                                    [:id pos-int?]]}
+                :get {:name :get-reservation-by-id
+                      :summary "get a reservation by id"
+                      :responses {200 {:body h.reservation/ReservationJsonSchema}
+                                  404 {:body CommonError}}
+                      :handler handler}
+                :put {:name :edit-reservation
+                      :summary "edit reservation"
+                      :parameters {:body (-> h.reservation/ReservationJsonSchema
+                                             (mu/dissoc :source))}
+                      :responses {200 {:body h.reservation/ReservationJsonSchema}
+                                  404 {:body CommonError}
+                                  409 {:body CommonError}}
+                      :handler handler}
+                :delete {:name :delete-reservation
+                         :summary "delete reservation"
+                         :responses {204 {:description "delete success"}
+                                     404 {:body CommonError}}
+                         :handler handler}}]]]]
 
     {:validate spec/validate ; enable spec validation for route data
      :exception pretty/exception

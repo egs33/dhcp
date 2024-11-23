@@ -51,3 +51,36 @@
           :body (format-reservation reservation)})
        (catch Exception e
          (log/error e))))
+
+(defmethod h/handler :get-reservation-by-id
+  [{:keys [:db :parameters]}]
+  (if-let [reservation (p.db/find-reservation-by-id db (get-in parameters [:path :id]))]
+    {:status 200
+     :body (format-reservation reservation)}
+    {:status 404
+     :body {:error "reservation not found"}}))
+
+(defmethod h/handler :edit-reservation
+  [{:keys [:db :parameters]}]
+  (if-let [reservation (p.db/find-reservation-by-id db (get-in parameters [:path :id]))]
+    (if (= (:source reservation) "config")
+      {:status 409
+       :body {:error "reservation is from config, cannot be edited"}}
+      (p.db/transaction db
+                        (fn [db]
+                          (p.db/delete-reservation-by-id db (:id reservation))
+                          (let [[r] (p.db/add-reservations db [(assoc (:body parameters) :source "api")])]
+                            {:status 200
+                             :body (format-reservation r)}))))
+    {:status 404
+     :body {:error "reservation not found"}}))
+
+(defmethod h/handler :delete-reservation
+  [{:keys [:db :parameters]}]
+  (if-let [reservation (p.db/find-reservation-by-id db (get-in parameters [:path :id]))]
+    (do
+      (p.db/delete-reservation-by-id db (:id reservation))
+      {:status 204
+       :body nil})
+    {:status 404
+     :body {:error "reservation not found"}}))
