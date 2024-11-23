@@ -175,7 +175,7 @@
           (let [id (-> (p.db/find-reservations-by-hw-address db (byte-array [10 20 30]))
                        first
                        :id)]
-            (p.db/delete-reservation db id)
+            (p.db/delete-reservation-by-id db id)
             (is (nil? (p.db/find-reservation-by-id db id)))
             (is (= 2
                    (count (p.db/get-all-reservations db))))))))
