@@ -19,6 +19,10 @@
       (swap! state #(update % :reservation into reservations))))
   (get-all-reservations [_]
     (:reservation @state))
+  (find-reservation-by-id [_ id]
+    (->> (:reservation @state)
+         (filter #(= (:id %) id))
+         first))
   (find-reservations-by-hw-address [_  hw-address]
     (let [value (u.bytes/bytes->number hw-address)]
       (->> (:reservation @state)

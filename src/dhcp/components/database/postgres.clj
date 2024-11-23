@@ -97,6 +97,12 @@
     (-> (sql/select :*)
         (sql/from :reservation)
         (->> (fetch datasource))))
+  (find-reservation-by-id [_ id]
+    (-> (sql/select :*)
+        (sql/from :reservation)
+        (sql/where [:= :id id])
+        (->> (fetch datasource)
+             first)))
   (find-reservations-by-hw-address [_  hw-address]
     (-> (sql/select :*)
         (sql/from :reservation)
