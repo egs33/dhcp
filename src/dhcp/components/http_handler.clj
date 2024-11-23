@@ -84,7 +84,7 @@
             :post {:name :add-reservation
                    :summary "add reservation"
                    :parameters {:body (-> h.reservation/ReservationJsonSchema
-                                          (mu/dissoc :source))}
+                                          (mu/dissoc :source :id))}
                    :responses {201 {:body h.reservation/ReservationJsonSchema}}
                    :handler handler}}]
        ["/:id" {:parameters {:path [:map
