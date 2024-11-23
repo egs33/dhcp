@@ -23,9 +23,6 @@
     Instant
     LocalDate)))
 
-(def ^:dynamic *label-fn*
-  identity)
-
 (defn- rs-builder
   [rs opts]
   (jdbc.rs/as-unqualified-modified-maps rs (assoc opts :label-fn csk/->kebab-case-keyword)))
@@ -65,6 +62,14 @@
     (->> (jdbc/execute-one! ds sqlvec {:return-keys false})
          ::jdbc/update-count)))
 
+(defn execute
+  [ds sql]
+  (let [sqlvec (honey/format sql)]
+    (log/debug sqlvec)
+    (->> (jdbc/execute! ds sqlvec {:builder-fn rs-builder
+                                   :return-keys true})
+         (map #(into {} %)))))
+
 (defrecord ^:private PostgresDatabase
   [option datasource]
   component/Lifecycle
@@ -92,7 +97,7 @@
     (when (seq reservations)
       (-> (sql/insert-into :reservation)
           (sql/values reservations)
-          (->> (execute-batch datasource)))))
+          (->> (execute datasource)))))
   (get-all-reservations [_]
     (-> (sql/select :*)
         (sql/from :reservation)
@@ -168,7 +173,7 @@
 
   (transaction [this f]
     #_:clj-kondo/ignore
-    (jdbc/with-transaction [datasource db]
+    (jdbc/with-transaction [db datasource]
                            (f (assoc this :datasource db)))))
 
 (defn new-postgres-database [option]

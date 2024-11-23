@@ -13,12 +13,21 @@
     (testing "add-and-get-reservations-test"
       (let [db (sut/new-memory-database)]
         (testing "add 2 reservations"
-          (p.db/add-reservations db [{:hw-address (byte-array [1 2 3 4 5 6])
-                                      :ip-address (byte-array [192 168 0 1])
-                                      :source "config"}
-                                     {:hw-address (byte-array [10 20 30])
-                                      :ip-address (byte-array [172 16 0 20])
-                                      :source "api"}])
+          (let [ret (p.db/add-reservations db [{:hw-address (byte-array [1 2 3 4 5 6])
+                                                :ip-address (byte-array [192 168 0 1])
+                                                :source "config"}
+                                               {:hw-address (byte-array [10 20 30])
+                                                :ip-address (byte-array [172 16 0 20])
+                                                :source "api"}])]
+            (is (= [{:hw-address (th/byte-vec [1 2 3 4 5 6])
+                     :ip-address (th/byte-vec [192 168 0 1])
+                     :source "config"}
+                    {:hw-address (th/byte-vec [10 20 30])
+                     :ip-address (th/byte-vec [172 16 0 20])
+                     :source "api"}]
+                   (->> ret
+                        (map #(dissoc % :id))
+                        th/array->vec-recursively))))
           (is (= [{:hw-address (th/byte-vec [1 2 3 4 5 6])
                    :ip-address (th/byte-vec [192 168 0 1])
                    :source "config"}
