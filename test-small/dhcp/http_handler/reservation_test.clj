@@ -40,7 +40,8 @@
         (is (= {:status 201
                 :body {:hw-address "00:0B:16:21:2C:37"
                        :ip-address "192.168.0.10"
-                       :source "api"}}
+                       :source "api"
+                       :id 2}}
                (h/handler {:db db
                            :reitit.core/match {:data {:name :add-reservation}}
                            :parameters {:body {:hw-address "00:0B:16:21:2C:37"
