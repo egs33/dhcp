@@ -45,10 +45,10 @@
   (try (let [reservation (-> (:body parameters)
                              (update :hw-address u.bytes/parse)
                              (update :ip-address (comp r.ip-address/->byte-array r.ip-address/str->ip-address))
-                             (assoc :source "api"))]
-         (p.db/add-reservations db [reservation])
+                             (assoc :source "api"))
+             [inserted] (p.db/add-reservations db [reservation])]
          {:status 201
-          :body (format-reservation reservation)})
+          :body (format-reservation inserted)})
        (catch Exception e
          (log/error e))))
 
