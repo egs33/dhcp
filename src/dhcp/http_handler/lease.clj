@@ -3,7 +3,8 @@
    [dhcp.http-handler :as h]
    [dhcp.protocol.database :as p.db]
    [dhcp.records.ip-address :as r.ip-address]
-   [dhcp.util.bytes :as u.bytes]))
+   [dhcp.util.bytes :as u.bytes]
+   [dhcp.util.schema :as us]))
 
 (defn- format-lease [lease]
   (-> lease
@@ -20,9 +21,9 @@
    [:hostname string?]
    [:lease-time pos-int?]
    [:status [:enum "offer" "lease"]]
-   [:offered-at {:json-schema/type "string"} :time/instant]
+   [:offered-at us/instant-json-schema :time/instant]
    [:leased-at {:json-schema/oneOf [{:type "string"} {:type "null"}]} [:maybe :time/instant]]
-   [:expired-at {:json-schema/type "string"} :time/instant]])
+   [:expired-at us/instant-json-schema :time/instant]])
 
 (defmethod h/handler :get-leases
   [{:keys [:db]}]
