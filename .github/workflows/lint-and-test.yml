@@ -13,7 +13,7 @@ jobs:
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
-      - uses: DeLaGuardo/setup-clojure@12.5
+      - uses: DeLaGuardo/setup-clojure@13.0
         with:
           cljstyle: latest
           clj-kondo: latest
@@ -47,7 +47,7 @@ jobs:
           key: rocksaw-src-1.1.0
       - name: build rocksaw
         run : ./build-rocksaw.sh
-      - uses: DeLaGuardo/setup-clojure@12.5
+      - uses: DeLaGuardo/setup-clojure@13.0
         with:
           cli: latest
       - uses: actions/cache@v4
