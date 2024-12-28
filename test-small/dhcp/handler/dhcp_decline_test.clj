@@ -65,11 +65,10 @@
                           :offered-at (Instant/now)
                           :leased-at nil
                           :expired-at (Instant/now)})
-      (h/handler th/socket-mock
-                 db
-                 (reify
-                   r.config/IConfig
-                   (select-subnet [_ _] sample-subnet))
+      (h/handler {:db db
+                  :config (reify
+                            r.config/IConfig
+                            (select-subnet [_ _] sample-subnet))}
                  sample-packet)
       (is (= [{:client-id (th/byte-vec [1 11 22 33 44 55 66])
                :hw-address (th/byte-vec [255 255 255 255 255 255])

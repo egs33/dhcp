@@ -5,6 +5,8 @@
    [clojure.tools.logging :as log]
    [com.stuartsierra.component :as component]
    [dhcp.components.socket :as c.socket]
+   [dhcp.const.network :as c.network]
+   [dhcp.core.packet :as core.packet]
    [dhcp.records.dhcp-message :as r.dhcp-message]
    [dhcp.records.dhcp-packet :as r.packet]
    [dhcp.records.ip-address :as r.ip-address]
@@ -19,8 +21,6 @@
     SocketException)
    (java.util
     Arrays)))
-
-(def UDP-SERVER-PORT 67)
 
 (defn- list-local-interfaces
   "Return network interfaces on local machine"
@@ -110,7 +110,7 @@
             (when packet
               (let [parsed (parse-ethernet-frame packet)]
                 (when-let [udp-payload (get-in parsed [:ip-payload :udp-payload])]
-                  (when (= (:destination-port udp-payload) UDP-SERVER-PORT)
+                  (when (= (:destination-port udp-payload) c.network/UDP-SERVER-PORT)
                     (try
                       (let [message (r.dhcp-message/parse-message (:payload udp-payload))
                             dhcp-packet (r.packet/->DhcpPacket hw-address
@@ -121,7 +121,8 @@
                                                                   [255 255 255 255])
                                                                message)]
                         (try
-                          (handler @socket-atom dhcp-packet)
+                          (when-let [reply (handler dhcp-packet)]
+                            (core.packet/send-packet @socket-atom packet reply))
                           (catch ExceptionInfo e
                             (log/errorf "handler (type: %s) exception-info %s %s"
                                         (r.dhcp-message/get-type message)

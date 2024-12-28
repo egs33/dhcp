@@ -3,26 +3,16 @@
    [clojure.tools.logging :as log]
    [dhcp.components.socket]
    [dhcp.const.dhcp-type :refer [DHCPINFORM DHCPACK]]
-   [dhcp.core.packet :as core.packet]
    [dhcp.handler :as h]
-   [dhcp.protocol.database :as p.db]
    [dhcp.records.config :as r.config]
    [dhcp.records.dhcp-message :as r.dhcp-message]
    [dhcp.records.ip-address :as r.ip-address])
   (:import
-   (dhcp.components.socket
-    ISocket)
-   (dhcp.protocol.database
-    IDatabase)
-   (dhcp.records.config
-    Config)
    (dhcp.records.dhcp_packet
     DhcpPacket)))
 
 (defmethod h/handler DHCPINFORM
-  [^ISocket socket
-   ^IDatabase _db
-   ^Config config
+  [{:keys [:config]}
    ^DhcpPacket packet]
   (let [{:keys [:message]} packet]
     (log/debugf "DHCPINFORM %s" message)
@@ -44,22 +34,21 @@
                               :length 4, :value (->> (.getAddress (:local-ip-address packet))
                                                      (map #(Byte/toUnsignedInt %)))}]
                             requested-params
-                            [{:code 255, :type :end, :length 0, :value []}])
-            reply (r.dhcp-message/map->DhcpMessage
-                   {:op :BOOTREPLY
-                    :htype (:htype message)
-                    :hlen (:hlen message)
-                    :hops (byte 0)
-                    :xid (:xid message)
-                    :secs 0
-                    :flags (:flags message)
-                    :ciaddr (r.ip-address/->IpAddress 0)
-                    :yiaddr (:ciaddr message)
-                    :siaddr (r.ip-address/->IpAddress 0)
-                    :giaddr (:giaddr message)
-                    :chaddr (:chaddr message)
-                    :sname ""
-                    :file ""
-                    :options options})]
-        (core.packet/send-packet socket packet reply))
+                            [{:code 255, :type :end, :length 0, :value []}])]
+        (r.dhcp-message/map->DhcpMessage
+         {:op :BOOTREPLY
+          :htype (:htype message)
+          :hlen (:hlen message)
+          :hops (byte 0)
+          :xid (:xid message)
+          :secs 0
+          :flags (:flags message)
+          :ciaddr (r.ip-address/->IpAddress 0)
+          :yiaddr (:ciaddr message)
+          :siaddr (r.ip-address/->IpAddress 0)
+          :giaddr (:giaddr message)
+          :chaddr (:chaddr message)
+          :sname ""
+          :file ""
+          :options options}))
       (log/infof "no subnet found (DHCPINFORM) for %s" (:ciaddr message)))))
