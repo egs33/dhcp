@@ -60,11 +60,10 @@
 (deftest handler-dhcp-request-test
   (testing "no subnet definition"
     (let [db (db.mem/new-memory-database)]
-      (is (nil? (h/handler th/socket-mock
-                           db
-                           (reify
-                             r.config/IConfig
-                             (select-subnet [_ _] nil))
+      (is (nil? (h/handler {:db db
+                            :config (reify
+                                      r.config/IConfig
+                                      (select-subnet [_ _] nil))}
                            sample-packet)))))
   (testing "request-in-selecting"
     (let [db (db.mem/new-memory-database)
@@ -80,13 +79,13 @@
                                              (assoc % :value [192 168 0 101])
                                              %)
                                           options)))]
-            (is (nil? (h/handler th/socket-mock db config message)))))
+            (is (nil? (h/handler {:db db :config config} message)))))
         (testing "requested id not in message"
           (let [message (update-in sample-packet
                                    [:message :options]
                                    (fn [options]
                                      (remove #(= (:code %) 50) options)))]
-            (is (nil? (h/handler th/socket-mock db config message)))))
+            (is (nil? (h/handler {:db db :config config} message)))))
         (testing "requested id not in subnet"
           ;; TODO: DHCPNAK?
           (let [message (update-in sample-packet
@@ -96,7 +95,7 @@
                                              (assoc % :value [192 167 255 255])
                                              %)
                                           options)))]
-            (is (nil? (h/handler th/socket-mock db config message))))))
+            (is (nil? (h/handler {:db db :config config} message))))))
       (testing "offering record not found"
         (testing "no record"
           (with-redefs [p.db/find-leases-by-hw-address (constantly [])]
@@ -117,7 +116,7 @@
                                                                {:code 54, :type :dhcp-server-id
                                                                 :length 4, :value (th/byte-vec [192 168 0 100])}]
                                                      :sname ""})
-                   (h/handler th/socket-mock db config sample-packet)))))
+                   (h/handler {:db db :config config} sample-packet)))))
         (testing "other address only"
           (with-redefs [p.db/find-leases-by-hw-address (constantly [{:client-id (byte-array [1 11 22 33 44 55])
                                                                      :hw-address (byte-array [11 22 33 44 55 66])
@@ -155,7 +154,7 @@
                                                                {:code 54, :type :dhcp-server-id
                                                                 :length 4, :value [-64 -88 0 100]}]
                                                      :sname ""})
-                   (h/handler th/socket-mock db config sample-packet)))))
+                   (h/handler {:db db :config config} sample-packet)))))
         (testing "lease record expired"
           (with-redefs [p.db/find-leases-by-hw-address (constantly [{:client-id (byte-array [1 11 22 33 44 55])
                                                                      :hw-address (byte-array [11 22 33 44 55 66])
@@ -183,7 +182,7 @@
                                                                {:code 54, :type :dhcp-server-id
                                                                 :length 4, :value [-64 -88 0 100]}]
                                                      :sname ""})
-                   (h/handler th/socket-mock db config sample-packet))))))
+                   (h/handler {:db db :config config} sample-packet))))))
       (testing "send DHCPACK and update lease"
         (let [db (db.mem/new-memory-database)
               lease {:client-id (byte-array [1 11 22 33 44 55])
@@ -222,7 +221,7 @@
                                                                 :length 4, :value [255 255 255 0]}
                                                                {:code 255, :type :end, :length 0, :value []}]
                                                      :sname ""})
-                   (h/handler th/socket-mock db config sample-packet)))
+                   (h/handler {:db db :config config} sample-packet)))
             (is (= [(assoc (th/array->vec-recursively lease)
                            :status "lease"
                            :leased-at mock-now

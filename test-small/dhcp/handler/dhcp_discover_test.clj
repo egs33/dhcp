@@ -57,20 +57,18 @@
 (deftest handler-dhcp-discover-test
   (testing "no subnet definition"
     (let [db (db.mem/new-memory-database)]
-      (is (nil? (h/handler th/socket-mock
-                           db
-                           (reify
-                             r.config/IConfig
-                             (select-subnet [_ _] nil))
+      (is (nil? (h/handler {:db db
+                            :config (reify
+                                      r.config/IConfig
+                                      (select-subnet [_ _] nil))}
                            sample-packet)))))
   (testing "no available lease"
     (with-redefs [core.lease/choose-ip-address (constantly nil)]
       (let [db (db.mem/new-memory-database)]
-        (is (nil? (h/handler th/socket-mock
-                             db
-                             (reify
-                               r.config/IConfig
-                               (select-subnet [_ _] sample-subnet))
+        (is (nil? (h/handler {:db db
+                              :config (reify
+                                        r.config/IConfig
+                                        (select-subnet [_ _] sample-subnet))}
                              sample-packet))))))
   (testing "offer-new-lease"
     (with-redefs [core.lease/choose-ip-address (constantly {:pool (first (:pools sample-subnet))
@@ -107,11 +105,10 @@
                                                            {:code 1, :length 4, :type :subnet-mask, :value [255 255 255 0]}
                                                            {:code 255, :length 0, :type :end, :value []}]
                                                  :sname ""})
-               (h/handler th/socket-mock
-                          db
-                          (reify
-                            r.config/IConfig
-                            (select-subnet [_ _] sample-subnet))
+               (h/handler {:db db
+                           :config (reify
+                                     r.config/IConfig
+                                     (select-subnet [_ _] sample-subnet))}
                           sample-packet)))
         (is (= [{:client-id (th/byte-vec [1 11 22 33 44 55 66])
                  :hw-address (th/byte-vec [11 22 33 44 55 66])

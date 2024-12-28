@@ -9,8 +9,7 @@
    [dhcp.records.config :as r.config]
    [dhcp.records.dhcp-message :as r.dhcp-message]
    [dhcp.records.dhcp-packet :as r.packet]
-   [dhcp.records.ip-address :as r.ip-address]
-   [dhcp.test-helper :as th])
+   [dhcp.records.ip-address :as r.ip-address])
   (:import
    (java.net
     Inet4Address)))
@@ -56,11 +55,10 @@
 (deftest handler-dhcp-inform-test
   (testing "no subnet definition"
     (let [db (db.mem/new-memory-database)]
-      (is (nil? (h/handler th/socket-mock
-                           db
-                           (reify
-                             r.config/IConfig
-                             (select-subnet [_ _] nil))
+      (is (nil? (h/handler {:db db
+                            :config (reify
+                                      r.config/IConfig
+                                      (select-subnet [_ _] nil))}
                            sample-packet)))))
   (testing "subnet selected"
     (let [db (db.mem/new-memory-database)
@@ -87,7 +85,7 @@
                                                            {:code 1, :length 4, :type :subnet-mask, :value [255 255 255 0]}
                                                            {:code 255, :length 0, :type :end, :value []}]
                                                  :sname ""})
-               (h/handler th/socket-mock db config sample-packet))))
+               (h/handler {:db db :config config} sample-packet))))
       (testing "ciaddr is in a pool"
         (let [packet (update sample-packet :message #(assoc % :ciaddr (r.ip-address/str->ip-address "192.168.0.50")))]
           (is (= (r.dhcp-message/map->DhcpMessage {:op :BOOTREPLY
@@ -110,4 +108,4 @@
                                                              {:code 6, :length 4, :type :domain-server, :value [192 168 0 2]}
                                                              {:code 255, :length 0, :type :end, :value []}]
                                                    :sname ""})
-                 (h/handler th/socket-mock db config packet))))))))
+                 (h/handler {:db db :config config} packet))))))))
