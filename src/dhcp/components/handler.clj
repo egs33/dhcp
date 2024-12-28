@@ -11,8 +11,6 @@
    [dhcp.protocol.database]
    [dhcp.records.config])
   (:import
-   (dhcp.components.socket
-    ISocket)
    (dhcp.protocol.database
     IDatabase)
    (dhcp.records.config
@@ -21,9 +19,10 @@
     DhcpPacket)))
 
 (defn make-handler [^IDatabase db ^Config config]
-  (fn [^ISocket socket
-       ^DhcpPacket message]
-    (h/handler socket db config message)))
+  (fn [^DhcpPacket message]
+    (h/handler {:db db
+                :config config}
+               message)))
 
 (defrecord Handler [handler config db]
   component/Lifecycle

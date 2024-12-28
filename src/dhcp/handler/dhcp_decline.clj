@@ -7,12 +7,6 @@
    [dhcp.protocol.database :as p.db]
    [dhcp.records.dhcp-message :as r.dhcp-message])
   (:import
-   (dhcp.components.socket
-    ISocket)
-   (dhcp.protocol.database
-    IDatabase)
-   (dhcp.records.config
-    Config)
    (dhcp.records.dhcp_packet
     DhcpPacket)
    (java.time
@@ -21,9 +15,7 @@
     ChronoUnit)))
 
 (defmethod h/handler DHCPDECLINE
-  [^ISocket _socket
-   ^IDatabase db
-   ^Config _config
+  [{:keys [:db]}
    ^DhcpPacket packet]
   (log/debugf "DHCPDECLINE %s" (:message packet))
   (let [message (:message packet)]

@@ -121,7 +121,7 @@
                                                                   [255 255 255 255])
                                                                message)]
                         (try
-                          (when-let [reply (handler @socket-atom dhcp-packet)]
+                          (when-let [reply (handler dhcp-packet)]
                             (core.packet/send-packet @socket-atom packet reply))
                           (catch ExceptionInfo e
                             (log/errorf "handler (type: %s) exception-info %s %s"

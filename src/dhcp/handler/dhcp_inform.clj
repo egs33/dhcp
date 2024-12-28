@@ -8,19 +8,11 @@
    [dhcp.records.dhcp-message :as r.dhcp-message]
    [dhcp.records.ip-address :as r.ip-address])
   (:import
-   (dhcp.components.socket
-    ISocket)
-   (dhcp.protocol.database
-    IDatabase)
-   (dhcp.records.config
-    Config)
    (dhcp.records.dhcp_packet
     DhcpPacket)))
 
 (defmethod h/handler DHCPINFORM
-  [^ISocket _socket
-   ^IDatabase _db
-   ^Config config
+  [{:keys [:config]}
    ^DhcpPacket packet]
   (let [{:keys [:message]} packet]
     (log/debugf "DHCPINFORM %s" message)

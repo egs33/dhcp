@@ -11,12 +11,6 @@
    [dhcp.records.ip-address :as r.ip-address]
    [dhcp.util.bytes :as u.bytes])
   (:import
-   (dhcp.components.socket
-    ISocket)
-   (dhcp.protocol.database
-    IDatabase)
-   (dhcp.records.config
-    Config)
    (dhcp.records.dhcp_packet
     DhcpPacket)
    (java.nio.charset
@@ -34,9 +28,7 @@
            US-ASCII))
 
 (defmethod h/handler DHCPDISCOVER
-  [^ISocket _socket
-   ^IDatabase db
-   ^Config config
+  [{:keys [:db :config]}
    ^DhcpPacket packet]
   (log/debugf "DHCPDISCOVER %s" (:message packet))
   (if-let [subnet (r.config/select-subnet config (:local-ip-address packet))]
