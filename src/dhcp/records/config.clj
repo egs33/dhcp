@@ -202,7 +202,12 @@
    [:http-api {:optional true}
     [:map {:closed true}
      [:enabled boolean?]
-     [:port pos-int?]]]])
+     [:port pos-int?]]]
+   [:webhook {:optional true}
+    [:map {:closed true}
+     [:events {:optional true}
+      [:sequential [:enum "lease"]]]
+     [:url string?]]]])
 
 (defn- flat-error
   [error]
