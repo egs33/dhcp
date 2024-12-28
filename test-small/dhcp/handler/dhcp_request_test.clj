@@ -4,7 +4,6 @@
    [dhcp.components.database.memory :as db.mem]
    [dhcp.components.handler]
    [dhcp.const.dhcp-type :refer [DHCPREQUEST DHCPACK DHCPNAK]]
-   [dhcp.core.packet :as core.packet]
    [dhcp.handler :as h]
    [dhcp.handler.dhcp-request]
    [dhcp.protocol.database :as p.db]
@@ -100,102 +99,93 @@
             (is (nil? (h/handler th/socket-mock db config message))))))
       (testing "offering record not found"
         (testing "no record"
-          (let [packet-to-send (atom nil)]
-            (with-redefs [p.db/find-leases-by-hw-address (constantly [])
-                          core.packet/send-packet (fn [_ _ reply] (reset! packet-to-send reply) nil)]
-              (is (nil? (h/handler th/socket-mock db config sample-packet)))
-              (is (= (r.dhcp-message/map->DhcpMessage {:op :BOOTREPLY
-                                                       :htype (byte 1)
-                                                       :hlen (byte 6)
-                                                       :hops (byte 0)
-                                                       :xid 135280220
-                                                       :secs 0
-                                                       :flags 0x80
-                                                       :ciaddr (r.ip-address/->IpAddress 0)
-                                                       :yiaddr (r.ip-address/->IpAddress 0)
-                                                       :giaddr (r.ip-address/->IpAddress 0)
-                                                       :siaddr (r.ip-address/->IpAddress 0)
-                                                       :chaddr [11 22 33 44 55 66]
-                                                       :file ""
-                                                       :options [{:code 53, :type :dhcp-message-type, :length 1, :value [DHCPNAK]}
-                                                                 {:code 54, :type :dhcp-server-id
-                                                                  :length 4, :value (th/byte-vec [192 168 0 100])}]
-                                                       :sname ""})
-                     @packet-to-send)))))
+          (with-redefs [p.db/find-leases-by-hw-address (constantly [])]
+            (is (= (r.dhcp-message/map->DhcpMessage {:op :BOOTREPLY
+                                                     :htype (byte 1)
+                                                     :hlen (byte 6)
+                                                     :hops (byte 0)
+                                                     :xid 135280220
+                                                     :secs 0
+                                                     :flags 0x80
+                                                     :ciaddr (r.ip-address/->IpAddress 0)
+                                                     :yiaddr (r.ip-address/->IpAddress 0)
+                                                     :giaddr (r.ip-address/->IpAddress 0)
+                                                     :siaddr (r.ip-address/->IpAddress 0)
+                                                     :chaddr [11 22 33 44 55 66]
+                                                     :file ""
+                                                     :options [{:code 53, :type :dhcp-message-type, :length 1, :value [DHCPNAK]}
+                                                               {:code 54, :type :dhcp-server-id
+                                                                :length 4, :value (th/byte-vec [192 168 0 100])}]
+                                                     :sname ""})
+                   (h/handler th/socket-mock db config sample-packet)))))
         (testing "other address only"
-          (let [packet-to-send (atom nil)]
-            (with-redefs [p.db/find-leases-by-hw-address (constantly [{:client-id (byte-array [1 11 22 33 44 55])
-                                                                       :hw-address (byte-array [11 22 33 44 55 66])
-                                                                       :ip-address (byte-array [192 168 0 101])
-                                                                       :hostname "host1"
-                                                                       :lease-time 86400
-                                                                       :status "offer"
-                                                                       :offered-at (Instant/now)
-                                                                       :leased-at (Instant/now)
-                                                                       :expired-at (.plusSeconds (Instant/now) 2)}
-                                                                      {:client-id (byte-array [1 11 22 33 44 55])
-                                                                       :hw-address (byte-array [11 22 33 44 55 66])
-                                                                       :ip-address (byte-array [172 16 0 100])
-                                                                       :hostname "host1"
-                                                                       :lease-time 86400
-                                                                       :status "offer"
-                                                                       :offered-at (Instant/now)
-                                                                       :leased-at (Instant/now)
-                                                                       :expired-at (.plusSeconds (Instant/now) 2)}])
-                          core.packet/send-packet (fn [_ _ reply] (reset! packet-to-send reply) nil)]
-              (is (nil? (h/handler th/socket-mock db config sample-packet)))
-              (is (= (r.dhcp-message/map->DhcpMessage {:op :BOOTREPLY
-                                                       :htype (byte 1)
-                                                       :hlen (byte 6)
-                                                       :hops (byte 0)
-                                                       :xid 135280220
-                                                       :secs 0
-                                                       :flags 0x80
-                                                       :ciaddr (r.ip-address/->IpAddress 0)
-                                                       :yiaddr (r.ip-address/->IpAddress 0)
-                                                       :giaddr (r.ip-address/->IpAddress 0)
-                                                       :siaddr (r.ip-address/->IpAddress 0)
-                                                       :chaddr [11 22 33 44 55 66]
-                                                       :file ""
-                                                       :options [{:code 53, :type :dhcp-message-type, :length 1, :value [DHCPNAK]}
-                                                                 {:code 54, :type :dhcp-server-id
-                                                                  :length 4, :value [-64 -88 0 100]}]
-                                                       :sname ""})
-                     @packet-to-send)))))
+          (with-redefs [p.db/find-leases-by-hw-address (constantly [{:client-id (byte-array [1 11 22 33 44 55])
+                                                                     :hw-address (byte-array [11 22 33 44 55 66])
+                                                                     :ip-address (byte-array [192 168 0 101])
+                                                                     :hostname "host1"
+                                                                     :lease-time 86400
+                                                                     :status "offer"
+                                                                     :offered-at (Instant/now)
+                                                                     :leased-at (Instant/now)
+                                                                     :expired-at (.plusSeconds (Instant/now) 2)}
+                                                                    {:client-id (byte-array [1 11 22 33 44 55])
+                                                                     :hw-address (byte-array [11 22 33 44 55 66])
+                                                                     :ip-address (byte-array [172 16 0 100])
+                                                                     :hostname "host1"
+                                                                     :lease-time 86400
+                                                                     :status "offer"
+                                                                     :offered-at (Instant/now)
+                                                                     :leased-at (Instant/now)
+                                                                     :expired-at (.plusSeconds (Instant/now) 2)}])]
+
+            (is (= (r.dhcp-message/map->DhcpMessage {:op :BOOTREPLY
+                                                     :htype (byte 1)
+                                                     :hlen (byte 6)
+                                                     :hops (byte 0)
+                                                     :xid 135280220
+                                                     :secs 0
+                                                     :flags 0x80
+                                                     :ciaddr (r.ip-address/->IpAddress 0)
+                                                     :yiaddr (r.ip-address/->IpAddress 0)
+                                                     :giaddr (r.ip-address/->IpAddress 0)
+                                                     :siaddr (r.ip-address/->IpAddress 0)
+                                                     :chaddr [11 22 33 44 55 66]
+                                                     :file ""
+                                                     :options [{:code 53, :type :dhcp-message-type, :length 1, :value [DHCPNAK]}
+                                                               {:code 54, :type :dhcp-server-id
+                                                                :length 4, :value [-64 -88 0 100]}]
+                                                     :sname ""})
+                   (h/handler th/socket-mock db config sample-packet)))))
         (testing "lease record expired"
-          (let [packet-to-send (atom nil)]
-            (with-redefs [p.db/find-leases-by-hw-address (constantly [{:client-id (byte-array [1 11 22 33 44 55])
-                                                                       :hw-address (byte-array [11 22 33 44 55 66])
-                                                                       :ip-address (byte-array [192 168 0 100])
-                                                                       :hostname "host1"
-                                                                       :lease-time 86400
-                                                                       :status "offer"
-                                                                       :offered-at (Instant/now)
-                                                                       :leased-at (Instant/now)
-                                                                       :expired-at (.minusSeconds (Instant/now) 86401)}])
-                          core.packet/send-packet (fn [_ _ reply] (reset! packet-to-send reply) nil)]
-              (is (nil? (h/handler th/socket-mock db config sample-packet)))
-              (is (= (r.dhcp-message/map->DhcpMessage {:op :BOOTREPLY
-                                                       :htype (byte 1)
-                                                       :hlen (byte 6)
-                                                       :hops (byte 0)
-                                                       :xid 135280220
-                                                       :secs 0
-                                                       :flags 0x80
-                                                       :ciaddr (r.ip-address/->IpAddress 0)
-                                                       :yiaddr (r.ip-address/->IpAddress 0)
-                                                       :giaddr (r.ip-address/->IpAddress 0)
-                                                       :siaddr (r.ip-address/->IpAddress 0)
-                                                       :chaddr [11 22 33 44 55 66]
-                                                       :file ""
-                                                       :options [{:code 53, :type :dhcp-message-type, :length 1, :value [DHCPNAK]}
-                                                                 {:code 54, :type :dhcp-server-id
-                                                                  :length 4, :value [-64 -88 0 100]}]
-                                                       :sname ""})
-                     @packet-to-send))))))
+          (with-redefs [p.db/find-leases-by-hw-address (constantly [{:client-id (byte-array [1 11 22 33 44 55])
+                                                                     :hw-address (byte-array [11 22 33 44 55 66])
+                                                                     :ip-address (byte-array [192 168 0 100])
+                                                                     :hostname "host1"
+                                                                     :lease-time 86400
+                                                                     :status "offer"
+                                                                     :offered-at (Instant/now)
+                                                                     :leased-at (Instant/now)
+                                                                     :expired-at (.minusSeconds (Instant/now) 86401)}])]
+            (is (= (r.dhcp-message/map->DhcpMessage {:op :BOOTREPLY
+                                                     :htype (byte 1)
+                                                     :hlen (byte 6)
+                                                     :hops (byte 0)
+                                                     :xid 135280220
+                                                     :secs 0
+                                                     :flags 0x80
+                                                     :ciaddr (r.ip-address/->IpAddress 0)
+                                                     :yiaddr (r.ip-address/->IpAddress 0)
+                                                     :giaddr (r.ip-address/->IpAddress 0)
+                                                     :siaddr (r.ip-address/->IpAddress 0)
+                                                     :chaddr [11 22 33 44 55 66]
+                                                     :file ""
+                                                     :options [{:code 53, :type :dhcp-message-type, :length 1, :value [DHCPNAK]}
+                                                               {:code 54, :type :dhcp-server-id
+                                                                :length 4, :value [-64 -88 0 100]}]
+                                                     :sname ""})
+                   (h/handler th/socket-mock db config sample-packet))))))
       (testing "send DHCPACK and update lease"
         (let [db (db.mem/new-memory-database)
-              packet-to-send (atom nil)
               lease {:client-id (byte-array [1 11 22 33 44 55])
                      :hw-address (byte-array [11 22 33 44 55 66])
                      :ip-address (byte-array [192 168 0 100])
@@ -207,9 +197,7 @@
                      :expired-at (.plusSeconds (Instant/now) 80000)}
               mock-now (Instant/now)]
           (p.db/add-lease db lease)
-          (with-redefs [dhcp.handler.dhcp-request/now (constantly mock-now)
-                        core.packet/send-packet (fn [_ _ reply] (reset! packet-to-send reply) nil)]
-            (is (nil? (h/handler th/socket-mock db config sample-packet)))
+          (with-redefs [dhcp.handler.dhcp-request/now (constantly mock-now)]
             (is (= (r.dhcp-message/map->DhcpMessage {:op :BOOTREPLY
                                                      :htype (byte 1)
                                                      :hlen (byte 6)
@@ -234,7 +222,7 @@
                                                                 :length 4, :value [255 255 255 0]}
                                                                {:code 255, :type :end, :length 0, :value []}]
                                                      :sname ""})
-                   @packet-to-send))
+                   (h/handler th/socket-mock db config sample-packet)))
             (is (= [(assoc (th/array->vec-recursively lease)
                            :status "lease"
                            :leased-at mock-now

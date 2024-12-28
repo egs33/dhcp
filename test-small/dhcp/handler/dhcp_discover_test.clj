@@ -4,7 +4,6 @@
    [dhcp.components.database.memory :as db.mem]
    [dhcp.components.handler]
    [dhcp.core.lease :as core.lease]
-   [dhcp.core.packet :as core.packet]
    [dhcp.handler :as h]
    [dhcp.protocol.database :as p.db]
    [dhcp.records.config :as r.config]
@@ -87,25 +86,7 @@
                                   :status "lease"
                                   :offered-at (Instant/now)
                                   :leased-at (Instant/now)
-                                  :expired-at (Instant/now)})
-            packet-to-send (atom nil)]
-        (is (nil?
-             (with-redefs [core.packet/send-packet (fn [_ _ reply] (reset! packet-to-send reply) nil)]
-               (h/handler th/socket-mock
-                          db
-                          (reify
-                            r.config/IConfig
-                            (select-subnet [_ _] sample-subnet))
-                          sample-packet))))
-        (is (= [{:client-id (th/byte-vec [1 11 22 33 44 55 66])
-                 :hw-address (th/byte-vec [11 22 33 44 55 66])
-                 :ip-address (th/byte-vec [192 168 0 25])
-                 :hostname ""
-                 :lease-time 3600
-                 :status "offer"
-                 :leased-at nil}]
-               (th/array->vec-recursively (map #(dissoc % :offered-at :expired-at :id)
-                                               (p.db/get-all-leases db)))))
+                                  :expired-at (Instant/now)})]
         (is (= (r.dhcp-message/map->DhcpMessage {:op :BOOTREPLY
                                                  :htype (byte 1)
                                                  :hlen (byte 6)
@@ -126,4 +107,18 @@
                                                            {:code 1, :length 4, :type :subnet-mask, :value [255 255 255 0]}
                                                            {:code 255, :length 0, :type :end, :value []}]
                                                  :sname ""})
-               @packet-to-send))))))
+               (h/handler th/socket-mock
+                          db
+                          (reify
+                            r.config/IConfig
+                            (select-subnet [_ _] sample-subnet))
+                          sample-packet)))
+        (is (= [{:client-id (th/byte-vec [1 11 22 33 44 55 66])
+                 :hw-address (th/byte-vec [11 22 33 44 55 66])
+                 :ip-address (th/byte-vec [192 168 0 25])
+                 :hostname ""
+                 :lease-time 3600
+                 :status "offer"
+                 :leased-at nil}]
+               (th/array->vec-recursively (map #(dissoc % :offered-at :expired-at :id)
+                                               (p.db/get-all-leases db)))))))))

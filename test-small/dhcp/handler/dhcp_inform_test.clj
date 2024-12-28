@@ -4,7 +4,6 @@
    [dhcp.components.database.memory :as db.mem]
    [dhcp.components.handler]
    [dhcp.const.dhcp-type :refer [DHCPINFORM DHCPACK]]
-   [dhcp.core.packet :as core.packet]
    [dhcp.handler :as h]
    [dhcp.handler.dhcp-request]
    [dhcp.records.config :as r.config]
@@ -69,52 +68,46 @@
                    r.config/IConfig
                    (select-subnet [_ _] sample-subnet))]
       (testing "ciaddr is out of pools"
-        (let [packet-to-send (atom nil)]
-          (with-redefs [core.packet/send-packet (fn [_ _ reply] (reset! packet-to-send reply) nil)]
-            (is (nil? (h/handler th/socket-mock db config sample-packet)))
-            (is (= (r.dhcp-message/map->DhcpMessage {:op :BOOTREPLY
-                                                     :htype (byte 1)
-                                                     :hlen (byte 6)
-                                                     :hops (byte 0)
-                                                     :xid 135280221
-                                                     :secs 0
-                                                     :flags 0x80
-                                                     :ciaddr (r.ip-address/->IpAddress 0)
-                                                     :yiaddr (r.ip-address/str->ip-address "192.168.0.10")
-                                                     :giaddr (r.ip-address/->IpAddress 0)
-                                                     :siaddr (r.ip-address/->IpAddress 0)
-                                                     :chaddr [11 22 33 44 55 66]
-                                                     :file ""
-                                                     :options [{:code 53, :type :dhcp-message-type, :length 1, :value [DHCPACK]}
-                                                               {:code 54, :length 4, :type :dhcp-server-id, :value [192 168 0 100]}
-                                                               {:code 3, :length 4, :type :router, :value [192 168 0 1]}
-                                                               {:code 1, :length 4, :type :subnet-mask, :value [255 255 255 0]}
-                                                               {:code 255, :length 0, :type :end, :value []}]
-                                                     :sname ""})
-                   @packet-to-send)))))
+        (is (= (r.dhcp-message/map->DhcpMessage {:op :BOOTREPLY
+                                                 :htype (byte 1)
+                                                 :hlen (byte 6)
+                                                 :hops (byte 0)
+                                                 :xid 135280221
+                                                 :secs 0
+                                                 :flags 0x80
+                                                 :ciaddr (r.ip-address/->IpAddress 0)
+                                                 :yiaddr (r.ip-address/str->ip-address "192.168.0.10")
+                                                 :giaddr (r.ip-address/->IpAddress 0)
+                                                 :siaddr (r.ip-address/->IpAddress 0)
+                                                 :chaddr [11 22 33 44 55 66]
+                                                 :file ""
+                                                 :options [{:code 53, :type :dhcp-message-type, :length 1, :value [DHCPACK]}
+                                                           {:code 54, :length 4, :type :dhcp-server-id, :value [192 168 0 100]}
+                                                           {:code 3, :length 4, :type :router, :value [192 168 0 1]}
+                                                           {:code 1, :length 4, :type :subnet-mask, :value [255 255 255 0]}
+                                                           {:code 255, :length 0, :type :end, :value []}]
+                                                 :sname ""})
+               (h/handler th/socket-mock db config sample-packet))))
       (testing "ciaddr is in a pool"
-        (let [packet-to-send (atom nil)
-              packet (update sample-packet :message #(assoc % :ciaddr (r.ip-address/str->ip-address "192.168.0.50")))]
-          (with-redefs [core.packet/send-packet (fn [_ _ reply] (reset! packet-to-send reply) nil)]
-            (is (nil? (h/handler th/socket-mock db config packet)))
-            (is (= (r.dhcp-message/map->DhcpMessage {:op :BOOTREPLY
-                                                     :htype (byte 1)
-                                                     :hlen (byte 6)
-                                                     :hops (byte 0)
-                                                     :xid 135280221
-                                                     :secs 0
-                                                     :flags 0x80
-                                                     :ciaddr (r.ip-address/->IpAddress 0)
-                                                     :yiaddr (r.ip-address/str->ip-address "192.168.0.50")
-                                                     :giaddr (r.ip-address/->IpAddress 0)
-                                                     :siaddr (r.ip-address/->IpAddress 0)
-                                                     :chaddr [11 22 33 44 55 66]
-                                                     :file ""
-                                                     :options [{:code 53, :type :dhcp-message-type, :length 1, :value [DHCPACK]}
-                                                               {:code 54, :length 4, :type :dhcp-server-id, :value [192 168 0 100]}
-                                                               {:code 3, :length 4, :type :router, :value [192 168 0 1]}
-                                                               {:code 1, :length 4, :type :subnet-mask, :value [255 255 255 0]}
-                                                               {:code 6, :length 4, :type :domain-server, :value [192 168 0 2]}
-                                                               {:code 255, :length 0, :type :end, :value []}]
-                                                     :sname ""})
-                   @packet-to-send))))))))
+        (let [packet (update sample-packet :message #(assoc % :ciaddr (r.ip-address/str->ip-address "192.168.0.50")))]
+          (is (= (r.dhcp-message/map->DhcpMessage {:op :BOOTREPLY
+                                                   :htype (byte 1)
+                                                   :hlen (byte 6)
+                                                   :hops (byte 0)
+                                                   :xid 135280221
+                                                   :secs 0
+                                                   :flags 0x80
+                                                   :ciaddr (r.ip-address/->IpAddress 0)
+                                                   :yiaddr (r.ip-address/str->ip-address "192.168.0.50")
+                                                   :giaddr (r.ip-address/->IpAddress 0)
+                                                   :siaddr (r.ip-address/->IpAddress 0)
+                                                   :chaddr [11 22 33 44 55 66]
+                                                   :file ""
+                                                   :options [{:code 53, :type :dhcp-message-type, :length 1, :value [DHCPACK]}
+                                                             {:code 54, :length 4, :type :dhcp-server-id, :value [192 168 0 100]}
+                                                             {:code 3, :length 4, :type :router, :value [192 168 0 1]}
+                                                             {:code 1, :length 4, :type :subnet-mask, :value [255 255 255 0]}
+                                                             {:code 6, :length 4, :type :domain-server, :value [192 168 0 2]}
+                                                             {:code 255, :length 0, :type :end, :value []}]
+                                                   :sname ""})
+                 (h/handler th/socket-mock db config packet))))))))
