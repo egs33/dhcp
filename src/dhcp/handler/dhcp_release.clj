@@ -27,4 +27,5 @@
     (p.db/update-lease db
                        (byte-array (:chaddr message))
                        (:ciaddr message)
-                       {:expired-at (Instant/now)})))
+                       {:expired-at (Instant/now)})
+    nil))

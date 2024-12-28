@@ -1,8 +1,8 @@
 (ns dhcp.core.packet
   (:require
    [dhcp.components.socket :as c.socket]
-   [dhcp.components.udp-server :refer [UDP-SERVER-PORT]]
    [dhcp.const.dhcp-type :refer [DHCPNAK DHCPOFFER DHCPACK]]
+   [dhcp.const.network :refer [UDP-SERVER-PORT]]
    [dhcp.records.dhcp-message :as r.dhcp-message]
    [dhcp.records.dhcp-packet]
    [dhcp.records.ip-address :as r.ip-address]
