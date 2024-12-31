@@ -17,6 +17,7 @@
 
         ring/ring-core {:mvn/version "1.13.0"}
         metosin/reitit {:mvn/version "0.7.2"}
+        metosin/jsonista {:mvn/version "0.3.12"}
         info.sunng/ring-jetty9-adapter {:mvn/version "0.36.0"}}
  :aliases {:dev {:extra-paths ["dev" "test-small" "test-medium" "test-resources"]
                  :extra-deps {lambdaisland/kaocha {:mvn/version "1.91.1392"}
