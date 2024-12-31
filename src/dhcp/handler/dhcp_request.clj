@@ -6,6 +6,7 @@
    [dhcp.core.lease :as core.lease]
    [dhcp.handler :as h]
    [dhcp.protocol.database :as p.db]
+   [dhcp.protocol.webhook :as p.webhook]
    [dhcp.records.config :as r.config]
    [dhcp.records.dhcp-message :as r.dhcp-message]
    [dhcp.records.ip-address :as r.ip-address]
@@ -13,6 +14,8 @@
   (:import
    (dhcp.protocol.database
     IDatabase)
+   (dhcp.protocol.webhook
+    IWebhook)
    (dhcp.records.dhcp_packet
     DhcpPacket)
    (java.time
@@ -44,6 +47,7 @@
 
 (defn- request-in-selecting
   [^IDatabase db
+   ^IWebhook webhook
    subnet
    ^DhcpPacket packet
    s-id
@@ -67,12 +71,12 @@
             (create-dhcp-nak message l-addr))
           (let [req-ip-bytes (byte-array (u.bytes/number->byte-coll requested 4))
                 pool (core.lease/select-pool-by-ip-address subnet req-ip-bytes)
-                _ (p.db/update-lease db
-                                     (byte-array (:chaddr message))
-                                     req-ip-bytes
-                                     {:status "lease"
-                                      :leased-at (now)
-                                      :expired-at (.plusSeconds (now) (:lease-time pool))})
+                lease (p.db/update-lease db
+                                         (byte-array (:chaddr message))
+                                         req-ip-bytes
+                                         {:status "lease"
+                                          :leased-at (now)
+                                          :expired-at (.plusSeconds (now) (:lease-time pool))})
                 _ (log/debugf "DHCPREQUEST lease updated %s" (str (:chaddr message)))
                 options-by-code (reduce #(assoc %1 (:code %2) %2) {} (:options pool))
                 requested-params (->> (r.dhcp-message/get-option message 55)
@@ -87,6 +91,7 @@
                                                          (map #(Byte/toUnsignedInt %)))}]
                                 requested-params
                                 [{:code 255, :type :end, :length 0, :value []}])]
+            (p.webhook/send-lease webhook lease)
             (r.dhcp-message/map->DhcpMessage
              {:op :BOOTREPLY
               :htype (:htype message)
@@ -106,6 +111,7 @@
 
 (defn- request-in-init-reboot
   [^IDatabase db
+   ^IWebhook webhook
    subnet
    ^DhcpPacket packet
    requested-addr]
@@ -126,9 +132,9 @@
                                       (= (:status %) "lease"))))]
         (if (empty? leases)
           (log/infof "no lease found for %s" (str (:chaddr message)))
-          (if (->> leases
-                   (filter #(= requested-addr (u.bytes/bytes->number (:ip-address %))))
-                   seq)
+          (if-let [leases (->> leases
+                               (filter #(= requested-addr (u.bytes/bytes->number (:ip-address %))))
+                               seq)]
             (let [req-ip-bytes (byte-array (u.bytes/number->byte-coll requested-addr 4))
                   pool (core.lease/select-pool-by-ip-address subnet req-ip-bytes)
                   options-by-code (reduce #(assoc %1 (:code %2) %2) {} (:options pool))
@@ -144,6 +150,7 @@
                                                            (map #(Byte/toUnsignedInt %)))}]
                                   requested-params
                                   [{:code 255, :type :end, :length 0, :value []}])]
+              (p.webhook/send-lease webhook (first leases))
               (r.dhcp-message/map->DhcpMessage
                {:op :BOOTREPLY
                 :htype (:htype message)
@@ -166,6 +173,7 @@
 
 (defn- request-in-renewing
   [^IDatabase db
+   ^IWebhook webhook
    subnet
    ^DhcpPacket packet]
   (let [{:keys [:ciaddr :chaddr] :as message} (:message packet)
@@ -206,6 +214,7 @@
                                                      (map #(Byte/toUnsignedInt %)))}]
                             requested-params
                             [{:code 255, :type :end, :length 0, :value []}])]
+        (p.webhook/send-lease webhook (first leases))
         (r.dhcp-message/map->DhcpMessage
          {:op :BOOTREPLY
           :htype (:htype message)
@@ -225,12 +234,13 @@
 
 (defn- request-in-rebinding
   [^IDatabase db
+   ^IWebhook webhook
    subnet
    ^DhcpPacket packet]
-  (request-in-renewing db subnet packet))
+  (request-in-renewing db webhook subnet packet))
 
 (defmethod h/handler DHCPREQUEST
-  [{:keys [:db :config]}
+  [{:keys [:db :config :webhook]}
    ^DhcpPacket packet]
   (log/debugf "DHCPREQUEST %s" (:message packet))
   (let [subnet (r.config/select-subnet config (:local-ip-address packet))
@@ -241,20 +251,20 @@
       s-id
       (if subnet
         (do (log/debug "DHCPREQUEST (selecting)")
-            (request-in-selecting db subnet packet s-id requested))
+            (request-in-selecting db webhook subnet packet s-id requested))
         (log/infof "no subnet found for %s" (:local-ip-address packet)))
 
       requested
       (do (log/debug "DHCPREQUEST (init reboot)")
-          (request-in-init-reboot db subnet packet requested))
+          (request-in-init-reboot db webhook subnet packet requested))
 
       (zero? (r.ip-address/->int (:ciaddr message)))
       (log/info "invalid DHCPREQUEST")
 
       (:is-broadcast packet)
       (do (log/debug "DHCPREQUEST (rebinding)")
-          (request-in-rebinding db subnet packet))
+          (request-in-rebinding db webhook subnet packet))
 
       :else
       (do (log/debug "DHCPREQUEST (renewing)")
-          (request-in-renewing db subnet packet)))))
+          (request-in-renewing db webhook subnet packet)))))

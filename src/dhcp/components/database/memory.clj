@@ -80,7 +80,7 @@
     (->> (:lease @state)
          (filter #(= (:id %) lease-id))
          first))
-  (update-lease [_  hw-address ip-address values]
+  (update-lease [_ hw-address ip-address values]
     (swap! state
            (fn [current]
              (update current
@@ -92,7 +92,13 @@
                                                       ip-address))
                                (merge % values)
                                %)
-                            coll))))))
+                            coll)))))
+    (->> (:lease @state)
+         (filter #(and (u.bytes/equal? (:hw-address %)
+                                       hw-address)
+                       (u.bytes/equal? (:ip-address %)
+                                       ip-address)))
+         first))
   (delete-lease [_ hw-address start-address end-address]
     (let [s-ip-value (u.bytes/bytes->number start-address)
           e-ip-value (u.bytes/bytes->number end-address)]

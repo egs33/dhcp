@@ -9,24 +9,30 @@
    [dhcp.handler.dhcp-release]
    [dhcp.handler.dhcp-request]
    [dhcp.protocol.database]
+   [dhcp.protocol.webhook]
    [dhcp.records.config])
   (:import
    (dhcp.protocol.database
     IDatabase)
+   (dhcp.protocol.webhook
+    IWebhook)
    (dhcp.records.config
     Config)
    (dhcp.records.dhcp_packet
     DhcpPacket)))
 
-(defn make-handler [^IDatabase db ^Config config]
+(defn make-handler [^IDatabase db
+                    ^Config config
+                    ^IWebhook webhook]
   (fn [^DhcpPacket message]
     (h/handler {:db db
-                :config config}
+                :config config
+                :webhook webhook}
                message)))
 
-(defrecord Handler [handler config db]
+(defrecord Handler [handler config db webhook]
   component/Lifecycle
   (start [this]
-    (assoc this :handler (make-handler db config)))
+    (assoc this :handler (make-handler db config webhook)))
   (stop [this]
     (assoc this :handler nil)))

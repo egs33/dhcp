@@ -10,6 +10,7 @@
    [dhcp.components.http-handler :as c.http-handler]
    [dhcp.components.http-server :as c.http-server]
    [dhcp.components.udp-server :as c.udp-server]
+   [dhcp.components.webhook :as c.webhook]
    [dhcp.protocol.database :as p.db]
    [dhcp.records.config :as r.config]
    [unilog.config :as unilog]))
@@ -20,9 +21,11 @@
          "memory" (db.mem/new-memory-database)
          "postgresql" (db.pg/new-postgres-database (get-in config [:database :postgresql-option]))
          (throw (IllegalArgumentException. (str "Unsupported database type: " type))))
+   :webhook (when (:webhook config)
+              (c.webhook/map->Webhook (:webhook config)))
    :handler (component/using
              (c.handler/map->Handler {:config server-config})
-             [:db])
+             [:db :webhook])
    :udp-server (component/using (c.udp-server/map->UdpServer {:config config
                                                               :listen-only? listen-only})
                                 [:handler])

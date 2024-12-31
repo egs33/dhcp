@@ -163,7 +163,8 @@
         (sql/set values)
         (sql/where [:= :hw-address hw-address]
                    [:= :ip-address ip-address])
-        (->> (execute-batch datasource))))
+        (->> (execute datasource)
+             first)))
   (delete-lease [_ hw-address start-address end-address]
     (-> (sql/delete-from :lease)
         (sql/where [:= :hw-address hw-address]
