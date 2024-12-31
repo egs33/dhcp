@@ -2,6 +2,7 @@
   (:require
    [clojure.tools.logging :as log]
    [com.stuartsierra.component :as component]
+   [dhcp.core.lease :as c.lease]
    [dhcp.protocol.webhook :as p.webhook]
    [jsonista.core :as j])
   (:import
@@ -63,4 +64,4 @@
   p.webhook/IWebhook
   (send-lease [_ lease]
     (when (target-event? "lease")
-      (send-webhook client uri "lease" (j/write-value-as-string lease)))))
+      (send-webhook client uri "lease" (j/write-value-as-string (c.lease/format-lease lease))))))
