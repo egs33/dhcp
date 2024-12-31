@@ -121,7 +121,7 @@
         subnets (map-indexed (partial normalize-subnet root-lease-time)
                              (:subnets config))]
     (-> config
-        (select-keys [:interfaces :database :http-api])
+        (select-keys [:interfaces :database :http-api :webhook])
         (assoc :subnets (vec subnets)))))
 
 (def ^:private CidrSchema
