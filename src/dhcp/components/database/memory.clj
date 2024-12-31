@@ -10,8 +10,8 @@
 
 (defrecord ^{:doc "Database Implementation for development. Clear data after restart."
              :private true}
- MemoryDatabase
-           [^Atom state]
+  MemoryDatabase
+  [^Atom state]
   p.db/IDatabase
   (add-reservations [_ reservations]
     (doseq [reservation reservations]
