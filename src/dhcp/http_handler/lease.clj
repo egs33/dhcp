@@ -1,16 +1,9 @@
 (ns dhcp.http-handler.lease
   (:require
+   [dhcp.core.lease :as c.lease]
    [dhcp.http-handler :as h]
    [dhcp.protocol.database :as p.db]
-   [dhcp.records.ip-address :as r.ip-address]
-   [dhcp.util.bytes :as u.bytes]
    [dhcp.util.schema :as us]))
-
-(defn- format-lease [lease]
-  (-> lease
-      (update :client-id u.bytes/->colon-str)
-      (update :hw-address u.bytes/->colon-str)
-      (update :ip-address (comp str r.ip-address/bytes->ip-address))))
 
 (def LeaseJsonSchema
   [:map {:closed true}
@@ -29,13 +22,13 @@
   [{:keys [:db]}]
   ;; TODO: use limit and offset
   {:status 200
-   :body {:leases (map format-lease (p.db/get-all-leases db))}})
+   :body {:leases (map c.lease/format-lease (p.db/get-all-leases db))}})
 
 (defmethod h/handler :get-lease
   [{:keys [:db :parameters]}]
   (let [{:keys [:lease-id]} (:path parameters)]
     (if-let [lease (p.db/find-lease-by-id db lease-id)]
       {:status 200
-       :body (format-lease lease)}
+       :body (c.lease/format-lease lease)}
       {:status 404
        :body {:error "lease not found"}})))

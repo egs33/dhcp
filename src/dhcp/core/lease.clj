@@ -119,3 +119,9 @@
                    :ip-address available-ip
                    :status :new
                    :lease-time (:lease-time pool)})))))))))
+
+(defn format-lease [lease]
+  (-> lease
+      (update :client-id u.bytes/->colon-str)
+      (update :hw-address u.bytes/->colon-str)
+      (update :ip-address (comp str r.ip-address/bytes->ip-address))))
