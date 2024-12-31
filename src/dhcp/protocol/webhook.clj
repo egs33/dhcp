@@ -3,6 +3,6 @@
 (defprotocol IWebhook
   (send-lease [this lease]))
 
-(extend-protocol IWebhook
-  nil
+(defrecord NopWebhook []
+  IWebhook
   (send-lease [_ _]))

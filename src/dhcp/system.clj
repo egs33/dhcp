@@ -12,6 +12,7 @@
    [dhcp.components.udp-server :as c.udp-server]
    [dhcp.components.webhook :as c.webhook]
    [dhcp.protocol.database :as p.db]
+   [dhcp.protocol.webhook :as p.webhook]
    [dhcp.records.config :as r.config]
    [unilog.config :as unilog]))
 
@@ -21,8 +22,9 @@
          "memory" (db.mem/new-memory-database)
          "postgresql" (db.pg/new-postgres-database (get-in config [:database :postgresql-option]))
          (throw (IllegalArgumentException. (str "Unsupported database type: " type))))
-   :webhook (when (:webhook config)
-              (c.webhook/map->Webhook (:webhook config)))
+   :webhook (if (:webhook config)
+              (c.webhook/map->Webhook (:webhook config))
+              (p.webhook/->NopWebhook))
    :handler (component/using
              (c.handler/map->Handler {:config server-config})
              [:db :webhook])
@@ -49,7 +51,7 @@
       (let [system (component/start (new-system config server-config))]
         (p.db/delete-reservations-by-source (:db system) "config")
         (p.db/add-reservations (:db system) (r.config/reservations server-config))
-        (c.udp-server/blocks-until-close (:udp-server system))
+        ;; (c.udp-server/blocks-until-close (:udp-server system))
         system))))
 
 (defn stop [system]
