@@ -1,6 +1,5 @@
 (ns dhcp.protocol.webhook)
 
-
 (defprotocol IWebhook
   (send-lease [this lease]))
 
