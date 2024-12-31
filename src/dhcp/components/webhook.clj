@@ -64,4 +64,6 @@
   p.webhook/IWebhook
   (send-lease [_ lease]
     (when (target-event? "lease")
-      (send-webhook client uri "lease" (j/write-value-as-string (c.lease/format-lease lease))))))
+      (send-webhook client uri "lease" (-> (c.lease/format-lease lease)
+                                           (assoc :event "lease")
+                                           j/write-value-as-string)))))
