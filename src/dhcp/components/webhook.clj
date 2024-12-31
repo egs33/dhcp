@@ -2,6 +2,7 @@
   (:require
    [clojure.tools.logging :as log]
    [com.stuartsierra.component :as component]
+   [dhcp.protocol.webhook :as p.webhook]
    [jsonista.core :as j])
   (:import
    (clojure.lang
@@ -16,13 +17,6 @@
     HttpResponse$BodyHandlers)
    (java.time
     Duration)))
-
-(defprotocol IWebhook
-  (send-lease [this lease]))
-
-(extend-protocol IWebhook
-  nil
-  (send-lease [_ _]))
 
 (defn ^:private send-webhook
   [^HttpClient client
@@ -66,7 +60,7 @@
       (.close client))
     (assoc this :client nil :uri nil))
 
-  IWebhook
+  p.webhook/IWebhook
   (send-lease [_ lease]
     (when (target-event? "lease")
       (send-webhook client uri "lease" (j/write-value-as-string lease)))))
