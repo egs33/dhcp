@@ -122,7 +122,7 @@
                                                                message)]
                         (try
                           (when-let [reply (handler dhcp-packet)]
-                            (core.packet/send-packet @socket-atom packet reply))
+                            (core.packet/send-packet @socket-atom dhcp-packet reply))
                           (catch ExceptionInfo e
                             (log/errorf "handler (type: %s) exception-info %s %s"
                                         (r.dhcp-message/get-type message)
