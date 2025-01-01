@@ -1,0 +1,21 @@
+leaseTime: 3600
+subnets:
+  - cidr: 192.168.0.0/16
+    router: 192.168.0.1
+    pools:
+      - startAddress: 192.168.0.1
+        endAddress: 192.168.0.255
+    dns: [192.168.1.100]
+
+database:
+  type: postgresql
+  postgresql-option:
+    username: root
+    password: dbpassword
+    database-name: dhcp
+    server-name: localhost
+    port-number: 5432
+
+http-api:
+  enabled: true
+  port: 8080

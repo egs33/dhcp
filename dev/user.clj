@@ -7,5 +7,5 @@
 (defn go []
   (when @system
     (system/stop @system))
-  (reset! system (system/start {:config "config.yml"
+  (reset! system (system/start {:config "dev-resources/config.yml"
                                 :debug true})))
