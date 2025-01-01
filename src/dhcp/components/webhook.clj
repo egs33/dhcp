@@ -4,7 +4,8 @@
    [com.stuartsierra.component :as component]
    [dhcp.core.lease :as c.lease]
    [dhcp.protocol.webhook :as p.webhook]
-   [jsonista.core :as j])
+   [jsonista.core :as j]
+   [malli.core :as m])
   (:import
    (clojure.lang
     IFn)
@@ -64,6 +65,7 @@
   p.webhook/IWebhook
   (send-lease [_ lease]
     (when (target-event? "lease")
-      (send-webhook client uri "lease" (-> (c.lease/format-lease lease)
-                                           (assoc :event "lease")
-                                           j/write-value-as-string)))))
+      (let [event-data (-> (c.lease/format-lease lease)
+                           (assoc :event "lease"))]
+        (m/assert p.webhook/lease-event-schema event-data)
+        (send-webhook client uri "lease" (j/write-value-as-string event-data))))))
