@@ -77,3 +77,8 @@ database:
 httpApi:
   enabled: false
   port: 8080
+
+webhook:
+  events:
+    - lease
+  url: http://localhost:8000

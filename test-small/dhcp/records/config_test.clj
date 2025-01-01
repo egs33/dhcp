@@ -57,6 +57,16 @@
             "return nil")
         (is (= "database: postgres-option is required for type \"postgresql\"\n"
                msg)
+            "error message")))
+    (testing "webhook error"
+      (let [path1 (.getPath (io/resource "config/error-webhook.yml"))
+            ret (atom nil)
+            msg (with-out-str
+                  (reset! ret (r.config/load-config path1)))]
+        (is (nil? @ret)
+            "return nil")
+        (is (= "webhook.events[0]:should be \"lease\"\nwebhook.foo: disallowed key\n"
+               msg)
             "error message"))))
   (testing "load success"
     (testing "minimal config"
@@ -146,7 +156,9 @@
                                                 :database-name "dhcp"
                                                 :server-name "localhost"
                                                 :port-number 5432}}
-                 :http-api {:enabled false :port 8080}})
+                 :http-api {:enabled false :port 8080}
+                 :webhook {:events ["lease"]
+                           :url "http://localhost:8000"}})
                config)
             "return config is normalized")))))
 
