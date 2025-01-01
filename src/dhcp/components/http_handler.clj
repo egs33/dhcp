@@ -4,6 +4,7 @@
    [com.stuartsierra.component :as component]
    [dhcp.http-handler :as h]
    [dhcp.http-handler.lease :as h.lease]
+   [dhcp.http-handler.metadata]
    [dhcp.http-handler.reservation :as h.reservation]
    [malli.util :as mu]
    [muuntaja.core :as m]
@@ -108,7 +109,13 @@
                          :summary "delete reservation"
                          :responses {204 {:description "delete success"}
                                      404 {:body CommonError}}
-                         :handler handler}}]]]]
+                         :handler handler}}]]
+      ["/metadata" {:tags #{"metadata"}}
+       ["/server-version" {:get {:name :get-server-version
+                                 :summary "get server version"
+                                 :responses {200 {:body [:map
+                                                         [:version string?]]}}
+                                 :handler handler}}]]]]
 
     {:validate spec/validate ; enable spec validation for route data
      :exception pretty/exception
