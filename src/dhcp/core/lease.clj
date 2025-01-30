@@ -47,6 +47,40 @@
                :lease-time (:lease-time pool)}))
           (log/warnf "reservation address %s is already used by another host" reservation-addr))))))
 
+(defn- choose-ip-address-from-existing-lease
+  "RFC2131 4.3.1.
+  The client's current address as recorded in the client's current
+  binding, ELSE
+  The client's previous address as recorded in the client's (now
+  expired or released) binding, if that address is in the server's
+  pool of available addresses and not already allocated"
+  [db
+   subnet
+   ^bytes hw-address]
+  (when-let [host-lease (->> (p.db/find-leases-by-hw-address db hw-address)
+                             (filter #(<= (r.ip-address/->int (:start-address subnet))
+                                          (u.bytes/bytes->number (:ip-address %))
+                                          (r.ip-address/->int (:end-address subnet))))
+                             first)]
+    (cond
+      (.isBefore (Instant/now) (:expired-at host-lease))
+      {:pool (select-pool-by-ip-address subnet (:ip-address host-lease))
+       :ip-address (:ip-address host-lease)
+       :status :leasing
+       :lease-time (.between ChronoUnit/SECONDS (Instant/now) (:expired-at host-lease))}
+
+      ;; lease is expired and not used by other host
+      (->> (p.db/find-leases-by-ip-address-range
+            db (:ip-address host-lease) (:ip-address host-lease))
+           (some #(and (.isBefore (Instant/now) (:expired-at %))
+                       (not (u.bytes/equal? hw-address (:hw-address %)))))
+           not)
+      (let [pool (select-pool-by-ip-address subnet (:ip-address host-lease))]
+        {:pool pool
+         :ip-address (:ip-address host-lease)
+         :status :new
+         :lease-time (:lease-time pool)}))))
+
 (defn choose-ip-address
   "Choose an IP address for the client.
   If hw-address is registered in the reservation, prefer the ip address.
@@ -58,68 +92,42 @@
    ^bytes requested-addr                                    ; nilable
    ]
   (or (choose-ip-address-from-reservation db subnet hw-address)
-      (let [host-lease (->> (p.db/find-leases-by-hw-address db hw-address)
-                            (filter #(<= (r.ip-address/->int (:start-address subnet))
-                                         (u.bytes/bytes->number (:ip-address %))
-                                         (r.ip-address/->int (:end-address subnet))))
-                            first)]
-        (cond
-          (and host-lease
-               (.isBefore (Instant/now) (:expired-at host-lease)))
-          {:pool (select-pool-by-ip-address subnet (:ip-address host-lease))
-           :ip-address (:ip-address host-lease)
-           :status :leasing
-           :lease-time (.between ChronoUnit/SECONDS (Instant/now) (:expired-at host-lease))}
-
-          ;; lease is expired and not used by other host
-          (and host-lease
-               (->> (p.db/find-leases-by-ip-address-range
-                     db (:ip-address host-lease) (:ip-address host-lease))
-                    (some #(and (.isBefore (Instant/now) (:expired-at %))
-                                (not (u.bytes/equal? hw-address (:hw-address %)))))
-                    not))
-          (let [pool (select-pool-by-ip-address subnet (:ip-address host-lease))]
+      (choose-ip-address-from-existing-lease db subnet hw-address)
+      (let [pool-for-requested-addr (when requested-addr
+                                      (select-pool-by-ip-address subnet requested-addr))]
+        (if (and pool-for-requested-addr
+                 (not (:only-reserved-lease pool-for-requested-addr))
+                 (->> (p.db/find-leases-by-ip-address-range
+                       db requested-addr requested-addr)
+                      (filter #(.isBefore (Instant/now) (:expired-at %)))
+                      empty?))
+          (let [pool (select-pool-by-ip-address subnet requested-addr)]
             {:pool pool
-             :ip-address (:ip-address host-lease)
+             :ip-address requested-addr
              :status :new
              :lease-time (:lease-time pool)})
-
-          :else
-          (let [pool-for-requested-addr (when requested-addr
-                                          (select-pool-by-ip-address subnet requested-addr))]
-            (if (and pool-for-requested-addr
-                     (not (:only-reserved-lease pool-for-requested-addr))
-                     (->> (p.db/find-leases-by-ip-address-range
-                           db requested-addr requested-addr)
-                          (filter #(.isBefore (Instant/now) (:expired-at %)))
-                          empty?))
-              (let [pool (select-pool-by-ip-address subnet requested-addr)]
-                {:pool pool
-                 :ip-address requested-addr
-                 :status :new
-                 :lease-time (:lease-time pool)})
-              (let [current-leases-ips (->> (p.db/find-leases-by-ip-address-range
-                                             db (r.ip-address/->byte-array (:start-address subnet))
-                                             (r.ip-address/->byte-array (:end-address subnet)))
-                                            (map (comp u.bytes/bytes->number :ip-address))
-                                            set)
-                    available-ip (->> (:pools subnet)
-                                      (remove :only-reserved-lease)
-                                      (mapcat (fn [{:keys [:start-address :end-address]}]
-                                                (range (r.ip-address/->int start-address)
-                                                       (inc (r.ip-address/->int end-address)))))
-                                      (remove current-leases-ips)
-                                      first)
-                    available-ip (when available-ip
-                                   (-> (r.ip-address/->IpAddress available-ip)
-                                       r.ip-address/->byte-array))
-                    pool (when available-ip
-                           (select-pool-by-ip-address subnet available-ip))]
-                (when available-ip
-                  {:pool pool
-                   :ip-address available-ip
-                   :status :new
-                   :lease-time (:lease-time pool)}))))))))
+          (let [current-leases-ips (->> (p.db/find-leases-by-ip-address-range
+                                         db (r.ip-address/->byte-array (:start-address subnet))
+                                         (r.ip-address/->byte-array (:end-address subnet)))
+                                        (map (comp u.bytes/bytes->number :ip-address))
+                                        set)
+                available-ip (->> (:pools subnet)
+                                  (remove :only-reserved-lease)
+                                  (mapcat (fn [{:keys [:start-address :end-address]}]
+                                            (range (r.ip-address/->int start-address)
+                                                   (inc (r.ip-address/->int end-address)))))
+                                  (remove current-leases-ips)
+                                  first)
+                available-ip (when available-ip
+                               (-> (r.ip-address/->IpAddress available-ip)
+                                   r.ip-address/->byte-array))
+                pool (when available-ip
+                       (select-pool-by-ip-address subnet available-ip))]
+            (when available-ip
+              {:pool pool
+               :ip-address available-ip
+               :status :new
+               :lease-time (:lease-time pool)}))))))
 
 (defn format-lease [lease]
   (-> lease
