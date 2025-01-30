@@ -95,11 +95,10 @@
                      db requested-addr requested-addr)
                     (filter #(.isBefore (Instant/now) (:expired-at %)))
                     empty?))
-      (let [pool (select-pool-by-ip-address subnet requested-addr)]
-        {:pool pool
-         :ip-address requested-addr
-         :status :new
-         :lease-time (:lease-time pool)}))))
+      {:pool pool
+       :ip-address requested-addr
+       :status :new
+       :lease-time (:lease-time pool)})))
 
 (defn choose-ip-address
   "Choose an IP address for the client.
