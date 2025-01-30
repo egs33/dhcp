@@ -1,5 +1,6 @@
 (ns dhcp.core.lease
   (:require
+   [clojure.tools.logging :as log]
    [dhcp.protocol.database :as p.db]
    [dhcp.records.ip-address :as r.ip-address]
    [dhcp.util.bytes :as u.bytes])
@@ -18,15 +19,33 @@
                     (r.ip-address/->int (:end-address %))))
        first))
 
-(defn- select-reservation-and-pool [subnet reservations]
-  (when-let [reservation (->> reservations
+(defn- choose-ip-address-from-reservation
+  [db
+   subnet
+   ^bytes hw-address]
+  (when-let [reservation (->> (p.db/find-reservations-by-hw-address db hw-address)
                               (filter #(<= (r.ip-address/->int (:start-address subnet))
                                            (u.bytes/bytes->number (:ip-address %))
                                            (r.ip-address/->int (:end-address subnet))))
                               first)]
     (when-let [pool (select-pool-by-ip-address subnet (:ip-address reservation))]
-      {:reservation reservation
-       :pool pool})))
+      (let [reservation-addr (:ip-address reservation)
+            current-lease (first (p.db/find-leases-by-ip-address-range db reservation-addr reservation-addr))]
+        (if (or (nil? current-lease)
+                ;; TODO: consider client-identifier
+                (u.bytes/equal? (:hw-address current-lease) hw-address))
+          (let [lifetime (when current-lease
+                           (.between ChronoUnit/SECONDS (Instant/now) (:expired-at current-lease)))]
+            (if (and lifetime (pos? lifetime))
+              {:pool pool
+               :ip-address reservation-addr
+               :status :leasing
+               :lease-time lifetime}
+              {:pool pool
+               :ip-address reservation-addr
+               :status :new
+               :lease-time (:lease-time pool)}))
+          (log/warnf "reservation address %s is already used by another host" reservation-addr))))))
 
 (defn choose-ip-address
   "Choose an IP address for the client.
@@ -38,25 +57,7 @@
    ^bytes hw-address
    ^bytes requested-addr                                    ; nilable
    ]
-  (let [rp (select-reservation-and-pool subnet (p.db/find-reservations-by-hw-address db hw-address))
-        reservation-addr (get-in rp [:reservation :ip-address])
-        current-lease (when reservation-addr
-                        (first (p.db/find-leases-by-ip-address-range db reservation-addr reservation-addr)))]
-    (if (and rp
-             (or (nil? current-lease)
-                 ;; TODO: consider client-identifier
-                 (u.bytes/equal? (:hw-address current-lease) hw-address)))
-      (let [lifetime (when current-lease
-                       (.between ChronoUnit/SECONDS (Instant/now) (:expired-at current-lease)))]
-        (if (and lifetime (pos? lifetime))
-          {:pool (:pool rp)
-           :ip-address reservation-addr
-           :status :leasing
-           :lease-time lifetime}
-          {:pool (:pool rp)
-           :ip-address reservation-addr
-           :status :new
-           :lease-time (get-in rp [:pool :lease-time])}))
+  (or (choose-ip-address-from-reservation db subnet hw-address)
       (let [host-lease (->> (p.db/find-leases-by-hw-address db hw-address)
                             (filter #(<= (r.ip-address/->int (:start-address subnet))
                                          (u.bytes/bytes->number (:ip-address %))
@@ -118,7 +119,7 @@
                   {:pool pool
                    :ip-address available-ip
                    :status :new
-                   :lease-time (:lease-time pool)})))))))))
+                   :lease-time (:lease-time pool)}))))))))
 
 (defn format-lease [lease]
   (-> lease
