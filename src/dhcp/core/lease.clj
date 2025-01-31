@@ -89,6 +89,8 @@
   (when-let [pool (when requested-addr
                     (select-pool-by-ip-address subnet requested-addr))]
     (when (and (not (:only-reserved-lease pool))
+               (->> (p.db/find-reservations-by-ip-address-range db requested-addr requested-addr)
+                    empty?)
                (->> (p.db/find-leases-by-ip-address db requested-addr)
                     (filter #(.isBefore (Instant/now) (:expired-at %)))
                     empty?))
@@ -115,12 +117,19 @@
                                      (r.ip-address/->byte-array (:end-address subnet)))
                                     (map (comp u.bytes/bytes->number :ip-address))
                                     set)
+            reservation-ips (->> (p.db/find-reservations-by-ip-address-range
+                                  db
+                                  (r.ip-address/->byte-array (:start-address subnet))
+                                  (r.ip-address/->byte-array (:end-address subnet)))
+                                 (map (comp u.bytes/bytes->number :ip-address))
+                                 set)
             available-ip (->> (:pools subnet)
                               (remove :only-reserved-lease)
                               (mapcat (fn [{:keys [:start-address :end-address]}]
                                         (range (r.ip-address/->int start-address)
                                                (inc (r.ip-address/->int end-address)))))
                               (remove current-leases-ips)
+                              (remove reservation-ips)
                               first)]
         (when available-ip
           (let [available-ip (-> (r.ip-address/->IpAddress available-ip)

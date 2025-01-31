@@ -152,24 +152,38 @@
                                                                    (byte-array [0 1 2 3 4 5])
                                                                    (byte-array [192 168 0 50])))))))
       (testing "unavailable"
-        (let [db (db.mem/new-memory-database)]
-          (p.db/add-lease db {:client-id (byte-array [0 11 22 33 44 55])
-                              :hw-address (byte-array [0 11 22 33 44 55])
-                              :ip-address (byte-array [192 168 0 50])
-                              :hostname "reserved-host"
-                              :lease-time 86400
-                              :status "lease"
-                              :offered-at (Instant/now)
-                              :leased-at (Instant/now)
-                              :expired-at (.plusSeconds (Instant/now) 2)})
-          (is (= {:pool (th/array->vec-recursively (first (:pools sample-subnet)))
-                  :ip-address (th/byte-vec [192 168 0 1])
-                  :status :new
-                  :lease-time 86400}
-                 (th/array->vec-recursively (sut/choose-ip-address sample-subnet
-                                                                   db
-                                                                   (byte-array [0 1 2 3 4 5])
-                                                                   (byte-array [192 168 0 50])))))))
+        (testing "requested address is already leased by other host"
+          (let [db (db.mem/new-memory-database)]
+            (p.db/add-lease db {:client-id (byte-array [0 11 22 33 44 55])
+                                :hw-address (byte-array [0 11 22 33 44 55])
+                                :ip-address (byte-array [192 168 0 50])
+                                :hostname "reserved-host"
+                                :lease-time 86400
+                                :status "lease"
+                                :offered-at (Instant/now)
+                                :leased-at (Instant/now)
+                                :expired-at (.plusSeconds (Instant/now) 2)})
+            (is (= {:pool (th/array->vec-recursively (first (:pools sample-subnet)))
+                    :ip-address (th/byte-vec [192 168 0 1])
+                    :status :new
+                    :lease-time 86400}
+                   (th/array->vec-recursively (sut/choose-ip-address sample-subnet
+                                                                     db
+                                                                     (byte-array [0 1 2 3 4 5])
+                                                                     (byte-array [192 168 0 50])))))))
+        (testing "requested address is reserved"
+          (let [db (db.mem/new-memory-database)]
+            (p.db/add-reservations db [{:hw-address (byte-array [10 20 30 40 50 60])
+                                        :ip-address (byte-array [192 168 0 50])
+                                        :source "config"}])
+            (is (= {:pool (th/array->vec-recursively (first (:pools sample-subnet)))
+                    :ip-address (th/byte-vec [192 168 0 1])
+                    :status :new
+                    :lease-time 86400}
+                   (th/array->vec-recursively (sut/choose-ip-address sample-subnet
+                                                                     db
+                                                                     (byte-array [0 1 2 3 4 5])
+                                                                     (byte-array [192 168 0 50]))))))))
       (testing "request out of range"
         (let [db (db.mem/new-memory-database)]
           (is (= {:pool (th/array->vec-recursively (first (:pools sample-subnet)))
@@ -203,8 +217,11 @@
                                 :offered-at (Instant/now)
                                 :leased-at (Instant/now)
                                 :expired-at (.plusSeconds (Instant/now) 2)}))
+          (p.db/add-reservations db [{:hw-address (byte-array [10 20 30 40 50 60])
+                                      :ip-address (byte-array [192 168 0 100])
+                                      :source "config"}])
           (is (= {:pool (th/array->vec-recursively (first (:pools sample-subnet)))
-                  :ip-address (th/byte-vec [192 168 0 100])
+                  :ip-address (th/byte-vec [192 168 0 101])
                   :status :new
                   :lease-time 86400}
                  (th/array->vec-recursively (sut/choose-ip-address sample-subnet
