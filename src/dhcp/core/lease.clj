@@ -23,14 +23,13 @@
   [db
    subnet
    ^bytes hw-address]
-  (when-let [reservation (->> (p.db/find-reservations-by-hw-address db hw-address)
-                              (filter #(<= (r.ip-address/->int (:start-address subnet))
-                                           (u.bytes/bytes->number (:ip-address %))
-                                           (r.ip-address/->int (:end-address subnet))))
+  (when-let [reservation (->> (p.db/find-reservation db hw-address
+                                                     (r.ip-address/->byte-array (:start-address subnet))
+                                                     (r.ip-address/->byte-array (:end-address subnet)))
                               first)]
     (when-let [pool (select-pool-by-ip-address subnet (:ip-address reservation))]
       (let [reservation-addr (:ip-address reservation)
-            current-lease (first (p.db/find-leases-by-ip-address-range db reservation-addr reservation-addr))]
+            current-lease (first (p.db/find-leases-by-ip-address db reservation-addr))]
         (if (or (nil? current-lease)
                 ;; TODO: consider client-identifier
                 (u.bytes/equal? (:hw-address current-lease) hw-address))
@@ -70,8 +69,7 @@
        :lease-time (.between ChronoUnit/SECONDS (Instant/now) (:expired-at host-lease))}
 
       ;; lease is expired and not used by other host
-      (->> (p.db/find-leases-by-ip-address-range
-            db (:ip-address host-lease) (:ip-address host-lease))
+      (->> (p.db/find-leases-by-ip-address db (:ip-address host-lease))
            (some #(and (.isBefore (Instant/now) (:expired-at %))
                        (not (u.bytes/equal? hw-address (:hw-address %)))))
            not)
@@ -91,8 +89,7 @@
   (when-let [pool (when requested-addr
                     (select-pool-by-ip-address subnet requested-addr))]
     (when (and (not (:only-reserved-lease pool))
-               (->> (p.db/find-leases-by-ip-address-range
-                     db requested-addr requested-addr)
+               (->> (p.db/find-leases-by-ip-address db requested-addr)
                     (filter #(.isBefore (Instant/now) (:expired-at %)))
                     empty?))
       {:pool pool
