@@ -35,6 +35,14 @@
           end (u.bytes/bytes->number end-address)]
       (->> (:reservation @state)
            (filter #(<= start (u.bytes/bytes->number (:ip-address %)) end)))))
+  (find-reservation [_ hw-address start-address end-address]
+    (let [start (u.bytes/bytes->number start-address)
+          end (u.bytes/bytes->number end-address)
+          hw-value (u.bytes/bytes->number hw-address)]
+      (->> (:reservation @state)
+           (filter #(and (<= start (u.bytes/bytes->number (:ip-address %)) end)
+                         (= (u.bytes/bytes->number (:hw-address %))
+                            hw-value))))))
   (delete-reservation-by-id [_ id]
     (swap! state (fn [current]
                    (update current
@@ -74,6 +82,10 @@
   (find-leases-by-ip-address-range [_ start-address end-address]
     (let [start (u.bytes/bytes->number start-address)
           end (u.bytes/bytes->number end-address)]
+      (->> (:lease @state)
+           (filter #(<= start (u.bytes/bytes->number (:ip-address %)) end)))))
+  (find-leases-by-ip-address [_ ^bytes ip-address]
+    (let [value (u.bytes/bytes->number ip-address)]
       (->> (:lease @state)
            (filter #(<= start (u.bytes/bytes->number (:ip-address %)) end)))))
   (find-lease-by-id [_ lease-id]

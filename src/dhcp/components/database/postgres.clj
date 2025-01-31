@@ -119,6 +119,13 @@
         (sql/where [:>= :ip-address start-address]
                    [:<= :ip-address end-address])
         (->> (fetch datasource))))
+  (find-reservation [_ hw-address start-address end-address]
+    (-> (sql/select :*)
+        (sql/from :reservation)
+        (sql/where [:= :hw-address hw-address]
+                   [:>= :ip-address start-address]
+                   [:<= :ip-address end-address])
+        (->> (fetch datasource))))
   (delete-reservation-by-id [_ id]
     (-> (sql/delete-from :reservation)
         (sql/where [:= :id id])
