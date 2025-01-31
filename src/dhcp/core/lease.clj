@@ -121,17 +121,15 @@
                                         (range (r.ip-address/->int start-address)
                                                (inc (r.ip-address/->int end-address)))))
                               (remove current-leases-ips)
-                              first)
-            available-ip (when available-ip
-                           (-> (r.ip-address/->IpAddress available-ip)
-                               r.ip-address/->byte-array))
-            pool (when available-ip
-                   (select-pool-by-ip-address subnet available-ip))]
+                              first)]
         (when available-ip
-          {:pool pool
-           :ip-address available-ip
-           :status :new
-           :lease-time (:lease-time pool)}))))
+          (let [available-ip (-> (r.ip-address/->IpAddress available-ip)
+                                 r.ip-address/->byte-array)
+                pool (select-pool-by-ip-address subnet available-ip)]
+            {:pool pool
+             :ip-address available-ip
+             :status :new
+             :lease-time (:lease-time pool)})))))
 
 (defn format-lease [lease]
   (-> lease
