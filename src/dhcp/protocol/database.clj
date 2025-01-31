@@ -19,5 +19,7 @@
   (find-lease-by-id [this lease-id])
   (update-lease [this ^bytes hw-address ^bytes ip-address values])
   (delete-lease [this ^bytes hw-address ^bytes start-address ^bytes end-address])
+  (delete-oldest-expired-lease [this ^bytes start-address ^bytes end-address]
+    "Delete the oldest expired lease in the range and return it.")
 
   (transaction [this f]))

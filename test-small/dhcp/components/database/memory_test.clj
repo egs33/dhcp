@@ -546,4 +546,77 @@
                      :expired-at now}]
                    (->> (p.db/get-all-leases db)
                         (map #(dissoc % :id))
-                        (th/array->vec-recursively))))))))))
+                        (th/array->vec-recursively)))))))
+      (testing "delete-oldest-expired-lease-test"
+        (let [db (sut/new-memory-database)
+              now (Instant/now)
+              _ (p.db/add-lease db {:client-id (byte-array [1 2 3 4 5 6])
+                                    :hw-address (byte-array [1 2 3 4 5 6])
+                                    :ip-address (byte-array [192 168 0 1])
+                                    :hostname "host1"
+                                    :lease-time 86400
+                                    :status "lease"
+                                    :offered-at now
+                                    :leased-at now
+                                    :expired-at (.minusSeconds now 5)})
+              oldest (p.db/add-lease db {:client-id (byte-array [1 2 3 4 5 6])
+                                         :hw-address (byte-array [1 2 3 4 5 10])
+                                         :ip-address (byte-array [192 168 0 20])
+                                         :hostname "host1 (2)"
+                                         :lease-time 86400
+                                         :status "lease"
+                                         :offered-at now
+                                         :leased-at now
+                                         :expired-at (.minusSeconds now 10)})]
+          (p.db/add-lease db {:client-id (byte-array [1 2 3 4 5 6])
+                              :hw-address (byte-array [1 2 3 4 5 6])
+                              :ip-address (byte-array [192 168 0 2])
+                              :hostname "host1 (3)"
+                              :lease-time 86400
+                              :status "lease"
+                              :offered-at now
+                              :leased-at now
+                              :expired-at (.plusSeconds now 10)})
+          (p.db/add-lease db {:client-id (byte-array [10 20 30])
+                              :hw-address (byte-array [10 20 30])
+                              :ip-address (byte-array [172 16 0 19])
+                              :hostname "host2"
+                              :lease-time 3600
+                              :status "offer"
+                              :offered-at now
+                              :leased-at nil
+                              :expired-at (.plusSeconds now 5)})
+          (p.db/add-lease db {:client-id (byte-array [40 50 60])
+                              :hw-address (byte-array [40 50 60])
+                              :ip-address (byte-array [172 16 0 58])
+                              :hostname "tablet10"
+                              :lease-time 7200
+                              :status "offer"
+                              :offered-at now
+                              :leased-at nil
+                              :expired-at (.minusSeconds now 15)})
+          (p.db/add-lease db {:client-id (byte-array [1 2 3 4 5 12])
+                              :hw-address (byte-array [1 2 3 4 5 12])
+                              :ip-address (byte-array [192 168 0 21])
+                              :hostname "host3"
+                              :lease-time 86400
+                              :status "lease"
+                              :offered-at now
+                              :leased-at now
+                              :expired-at (.minusSeconds now 15)})
+          (p.db/add-reservations db [{:hw-address (byte-array [1 2 3 4 5 12])
+                                      :ip-address (byte-array [192 168 0 21])
+                                      :source "config"}])
+          (testing "delete oldest and return it"
+            (is (= 6
+                   (count (p.db/get-all-leases db))))
+            (is (= (th/array->vec-recursively oldest)
+                   (th/array->vec-recursively (p.db/delete-oldest-expired-lease
+                                               db (byte-array [192 168 0 1]) (byte-array [192 168 0 255])))))
+            (is (= 5
+                   (count (p.db/get-all-leases db)))))
+          (testing "no hit"
+            (is (nil? (p.db/delete-oldest-expired-lease
+                       db (byte-array [192 168 0 120]) (byte-array [192 168 0 121]))))
+            (is (= 5
+                   (count (p.db/get-all-leases db))))))))))

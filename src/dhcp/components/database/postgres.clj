@@ -143,7 +143,8 @@
     (db.common/assert-lease lease)
     (-> (sql/insert-into :lease)
         (sql/values [lease])
-        (->> (execute-batch datasource))))
+        (->> (execute datasource)
+             first)))
   (get-all-leases [_]
     (-> (sql/select :*)
         (sql/from :lease)
@@ -183,6 +184,20 @@
                    [:>= :ip-address start-address]
                    [:<= :ip-address end-address])
         (->> (execute-batch datasource))))
+  (delete-oldest-expired-lease [_ start-address end-address]
+    (-> (sql/delete-from :lease)
+        (sql/where [:= :id (-> (sql/select :id)
+                               (sql/from [:lease :sub])
+                               (sql/where [:<= :expired-at (Instant/now)]
+                                          [:>= :ip-address start-address]
+                                          [:<= :ip-address end-address]
+                                          [:not [:exists (-> (sql/select :*)
+                                                             (sql/from [:reservation :r])
+                                                             (sql/where [:= :r.ip-address :sub.ip-address]))]])
+                               (sql/order-by :expired-at)
+                               (sql/limit 1))])
+        (->> (execute datasource)
+             first)))
 
   (transaction [this f]
     #_:clj-kondo/ignore

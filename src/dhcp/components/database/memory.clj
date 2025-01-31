@@ -6,7 +6,9 @@
    [dhcp.util.bytes :as u.bytes])
   (:import
    (clojure.lang
-    Atom)))
+    Atom)
+   (java.time
+    Instant)))
 
 (defrecord ^{:doc "Database Implementation for development. Clear data after restart."
              :private true}
@@ -125,6 +127,28 @@
                                            (u.bytes/bytes->number (:ip-address %))
                                            e-ip-value))
                                  coll)))))))
+  (delete-oldest-expired-lease [_ start-address end-address]
+    (let [start (u.bytes/bytes->number start-address)
+          end (u.bytes/bytes->number end-address)
+          reserved-ips (->> (:reservation @state)
+                            (map :ip-address)
+                            (map u.bytes/bytes->number)
+                            set)]
+      (when-first [oldest (->> (:lease @state)
+                               (filter #(and (.isAfter (Instant/now) (:expired-at %))
+                                             (<= start
+                                                 (u.bytes/bytes->number (:ip-address %))
+                                                 end)
+                                             (not (reserved-ips (u.bytes/bytes->number (:ip-address %))))))
+                               (sort-by :expired-at))]
+        (swap! state
+               (fn [current]
+                 (update current
+                         :lease
+                         (fn [coll]
+                           (remove #(= (:id %) (:id oldest))
+                                   coll)))))
+        oldest)))
 
   (transaction [this f]
     (log/warn "MemoryDatabase does not support transaction")
