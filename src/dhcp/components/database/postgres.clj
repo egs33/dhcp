@@ -159,6 +159,11 @@
         (sql/where [:>= :ip-address start-address]
                    [:<= :ip-address end-address])
         (->> (fetch datasource))))
+  (find-leases-by-ip-address [_ ip-address]
+    (-> (sql/select :*)
+        (sql/from :lease)
+        (sql/where [:= :ip-address ip-address])
+        (->> (fetch datasource))))
   (find-lease-by-id [_ lease-id]
     (-> (sql/select :*)
         (sql/from :lease)

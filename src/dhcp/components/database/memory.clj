@@ -84,10 +84,10 @@
           end (u.bytes/bytes->number end-address)]
       (->> (:lease @state)
            (filter #(<= start (u.bytes/bytes->number (:ip-address %)) end)))))
-  (find-leases-by-ip-address [_ ^bytes ip-address]
+  (find-leases-by-ip-address [_ ip-address]
     (let [value (u.bytes/bytes->number ip-address)]
       (->> (:lease @state)
-           (filter #(<= start (u.bytes/bytes->number (:ip-address %)) end)))))
+           (filter #(= (u.bytes/bytes->number (:ip-address %)) value)))))
   (find-lease-by-id [_ lease-id]
     (->> (:lease @state)
          (filter #(= (:id %) lease-id))

@@ -461,6 +461,23 @@
                (->> (p.db/find-leases-by-ip-address-range
                      db (byte-array [172 16 0 58]) (byte-array [192 168 0 1]))
                     (map #(dissoc % :id))
+                    (th/array->vec-recursively))))))
+    (testing "find-leases-by-ip-address-test"
+      (testing "hit no entry"
+        (is (= []
+               (p.db/find-leases-by-ip-address db (byte-array [127 0 0 0])))))
+      (testing "hit 1 entry"
+        (is (= [{:client-id (th/byte-vec [1 2 3 4 5 6])
+                 :hw-address (th/byte-vec [1 2 3 4 5 6])
+                 :ip-address (th/byte-vec [192 168 0 1])
+                 :hostname "host1"
+                 :lease-time 86400
+                 :status "lease"
+                 :offered-at now
+                 :leased-at now
+                 :expired-at now}]
+               (->> (p.db/find-leases-by-ip-address db (byte-array [192 168 0 1]))
+                    (map #(dissoc % :id))
                     (th/array->vec-recursively))))))))
 
 ;; TODO
