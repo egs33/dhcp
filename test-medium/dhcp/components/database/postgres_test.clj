@@ -143,14 +143,15 @@
                     th/array->vec-recursively))))
       (testing "hit 2 entry"
         (is (= [{:hw-address (th/byte-vec [1 2 3 4 5 6])
-                 :ip-address (th/byte-vec [192 168 0 1])
+                 :ip-address (th/byte-vec [172 16 1 1])
                  :source "config"}
                 {:hw-address (th/byte-vec [1 2 3 4 5 6])
-                 :ip-address (th/byte-vec [172 16 1 1])
+                 :ip-address (th/byte-vec [192 168 0 1])
                  :source "config"}]
                (->> (p.db/find-reservations-by-hw-address db (byte-array [1 2 3 4 5 6]))
                     (map #(dissoc % :id))
-                    th/array->vec-recursively)))))
+                    th/array->vec-recursively
+                    (sort-by :ip-address))))))
     (testing "find-reservations-by-ip-address-range-test"
       (testing "hit no entry"
         (is (= []
@@ -174,18 +175,20 @@
                (->> (p.db/find-reservations-by-ip-address-range
                      db (byte-array [172 16 0 0]) (byte-array [172 16 15 255]))
                     (map #(dissoc % :id))
-                    th/array->vec-recursively))))
+                    th/array->vec-recursively
+                    (sort-by :source)))))
       (testing "start and end are inclusive"
         (is (= [{:hw-address (th/byte-vec [1 2 3 4 5 6])
-                 :ip-address (th/byte-vec [192 168 0 1])
+                 :ip-address (th/byte-vec [172 16 1 1])
                  :source "config"}
                 {:hw-address (th/byte-vec [1 2 3 4 5 6])
-                 :ip-address (th/byte-vec [172 16 1 1])
+                 :ip-address (th/byte-vec [192 168 0 1])
                  :source "config"}]
                (->> (p.db/find-reservations-by-ip-address-range
                      db (byte-array [172 16 1 1]) (byte-array [192 168 0 1]))
                     (map #(dissoc % :id))
-                    th/array->vec-recursively)))))
+                    th/array->vec-recursively
+                    (sort-by :ip-address))))))
     (testing "find-reservation-test"
       (testing "hit no entry"
         (testing "out of ip range"
@@ -206,15 +209,16 @@
                     th/array->vec-recursively))))
       (testing "start and end are inclusive"
         (is (= [{:hw-address (th/byte-vec [1 2 3 4 5 6])
-                 :ip-address (th/byte-vec [192 168 0 1])
+                 :ip-address (th/byte-vec [172 16 1 1])
                  :source "config"}
                 {:hw-address (th/byte-vec [1 2 3 4 5 6])
-                 :ip-address (th/byte-vec [172 16 1 1])
+                 :ip-address (th/byte-vec [192 168 0 1])
                  :source "config"}]
                (->> (p.db/find-reservation
                      db (byte-array [1 2 3 4 5 6]) (byte-array [172 16 1 1]) (byte-array [192 168 0 1]))
                     (map #(dissoc % :id))
-                    th/array->vec-recursively)))))))
+                    th/array->vec-recursively
+                    (sort-by :ip-address))))))))
 
 (deftest delete-reservation-by-id-test
   (let [db @db-atom]
