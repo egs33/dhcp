@@ -131,14 +131,22 @@
                               (remove current-leases-ips)
                               (remove reservation-ips)
                               first)]
-        (when available-ip
+        (if available-ip
           (let [available-ip (-> (r.ip-address/->IpAddress available-ip)
                                  r.ip-address/->byte-array)
                 pool (select-pool-by-ip-address subnet available-ip)]
             {:pool pool
              :ip-address available-ip
              :status :new
-             :lease-time (:lease-time pool)})))))
+             :lease-time (:lease-time pool)})
+          (when-let [{:keys [:ip-address]} (p.db/delete-oldest-expired-lease
+                                            db (r.ip-address/->byte-array (:start-address subnet))
+                                            (r.ip-address/->byte-array (:end-address subnet)))]
+            (let [pool (select-pool-by-ip-address subnet ip-address)]
+              {:pool pool
+               :ip-address ip-address
+               :status :new
+               :lease-time (:lease-time pool)}))))))
 
 (defn format-lease [lease]
   (-> lease

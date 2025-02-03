@@ -229,21 +229,71 @@
                                                                    (byte-array [0 1 2 3 4 5])
                                                                    nil))))))
       (testing "pool is full"
-        (let [db (db.mem/new-memory-database)]
-          (doseq [i (range 256)]
-            (p.db/add-lease db {:client-id (byte-array [i 11 22 33 44 55])
-                                :hw-address (byte-array [i 11 22 33 44 55])
-                                :ip-address (byte-array [192 168 0 i])
-                                :hostname (str "reserved-host" i)
+        (testing "all leases are active"
+          (let [db (db.mem/new-memory-database)]
+            (doseq [i (range 256)]
+              (p.db/add-lease db {:client-id (byte-array [i 11 22 33 44 55])
+                                  :hw-address (byte-array [i 11 22 33 44 55])
+                                  :ip-address (byte-array [192 168 0 i])
+                                  :hostname (str "reserved-host" i)
+                                  :lease-time 86400
+                                  :status "lease"
+                                  :offered-at (Instant/now)
+                                  :leased-at (Instant/now)
+                                  :expired-at (.plusSeconds (Instant/now) 2)}))
+            (is (nil? (sut/choose-ip-address sample-subnet
+                                             db
+                                             (byte-array [0 1 2 3 4 5])
+                                             nil)))))
+        (testing "some leases are expired"
+          (let [db (db.mem/new-memory-database)]
+            (doseq [i (range 62)]
+              (p.db/add-lease db {:client-id (byte-array [i 11 22 33 44 155])
+                                  :hw-address (byte-array [i 11 22 33 44 155])
+                                  :ip-address (byte-array [192 168 1 i])
+                                  :hostname (str "reserved-host" i)
+                                  :lease-time 86400
+                                  :status "lease"
+                                  :offered-at (Instant/now)
+                                  :leased-at (Instant/now)
+                                  :expired-at (.plusSeconds (Instant/now) 2)}))
+            (p.db/add-lease db {:client-id (byte-array [62 11 22 33 44 155])
+                                :hw-address (byte-array [62 11 22 33 44 155])
+                                :ip-address (byte-array [192 168 1 62])
+                                :hostname (str "reserved-host" 62)
                                 :lease-time 86400
                                 :status "lease"
                                 :offered-at (Instant/now)
                                 :leased-at (Instant/now)
-                                :expired-at (.plusSeconds (Instant/now) 2)}))
-          (is (nil? (sut/choose-ip-address sample-subnet
-                                           db
-                                           (byte-array [0 1 2 3 4 5])
-                                           nil)))))
+                                :expired-at (.minusSeconds (Instant/now) 2)})
+            (p.db/add-lease db {:client-id (byte-array [63 11 22 33 44 155])
+                                :hw-address (byte-array [63 11 22 33 44 155])
+                                :ip-address (byte-array [192 168 1 63])
+                                :hostname (str "reserved-host" 63)
+                                :lease-time 86400
+                                :status "lease"
+                                :offered-at (Instant/now)
+                                :leased-at (Instant/now)
+                                :expired-at (.minusSeconds (Instant/now) 1)})
+            (let [pool {:start-address (r.ip-address/str->ip-address "192.168.1.1")
+                        :end-address (r.ip-address/str->ip-address "192.168.1.63")
+                        :only-reserved-lease false
+                        :lease-time 86400
+                        :reservation []
+                        :options []}]
+              (is (= {:pool (th/array->vec-recursively pool)
+                      :ip-address (th/byte-vec [192 168 1 62])
+                      :status :new
+                      :lease-time 86400}
+                     (th/array->vec-recursively
+                      (sut/choose-ip-address {:start-address (r.ip-address/str->ip-address "192.168.1.0")
+                                              :end-address (r.ip-address/str->ip-address "192.168.1.255")
+                                              :pools [pool]}
+                                             db
+                                             (byte-array [0 1 2 3 4 5])
+                                             nil))))
+              (is (= []
+                     (p.db/find-leases-by-ip-address db (byte-array [192 168 1 62]))))))))
       (testing "multi pools"
         (let [db (db.mem/new-memory-database)
               subnet {:start-address (r.ip-address/str->ip-address "192.168.0.0")
