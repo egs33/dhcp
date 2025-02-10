@@ -4,6 +4,8 @@
    [com.stuartsierra.component :as component]
    [dhcp.core.lease :as c.lease]
    [dhcp.protocol.webhook :as p.webhook]
+   [dhcp.records.ip-address :as r.ip-address]
+   [dhcp.util.bytes :as u.bytes]
    [jsonista.core :as j]
    [malli.core :as m])
   (:import
@@ -50,9 +52,9 @@
           client (-> (HttpClient/newBuilder)
                      (.connectTimeout (Duration/ofSeconds 60))
                      (.build))
-          target-event? (if events
-                          (set events)
-                          any?)]
+          target-event? (if (contains? (set events) "all")
+                          any?
+                          (set events))]
       (assoc this
              :client client
              :uri uri
@@ -63,9 +65,36 @@
     (assoc this :client nil :uri nil))
 
   p.webhook/IWebhook
+  (send-offer [_ offer]
+    (when (target-event? "offer")
+      (let [event-data (-> offer
+                           (update :client-id #(when % (u.bytes/->colon-str %)))
+                           (update :hw-address u.bytes/->colon-str)
+                           (update :ip-address (comp str r.ip-address/bytes->ip-address))
+                           (assoc :event "offer"))]
+        (m/assert p.webhook/offer-event-schema event-data)
+        (send-webhook client uri "offer" (j/write-value-as-string event-data)))))
   (send-lease [_ lease]
     (when (target-event? "lease")
       (let [event-data (-> (c.lease/format-lease lease)
                            (assoc :event "lease"))]
         (m/assert p.webhook/lease-event-schema event-data)
-        (send-webhook client uri "lease" (j/write-value-as-string event-data))))))
+        (send-webhook client uri "lease" (j/write-value-as-string event-data)))))
+  (send-renew [_ lease]
+    (when (target-event? "renew")
+      (let [event-data (-> (c.lease/format-lease lease)
+                           (assoc :event "renew"))]
+        (m/assert p.webhook/lease-event-schema event-data)
+        (send-webhook client uri "renew" (j/write-value-as-string event-data)))))
+  (send-rebind [_ lease]
+    (when (target-event? "rebind")
+      (let [event-data (-> (c.lease/format-lease lease)
+                           (assoc :event "rebind"))]
+        (m/assert p.webhook/lease-event-schema event-data)
+        (send-webhook client uri "rebind" (j/write-value-as-string event-data)))))
+  (send-release [_ lease]
+    (when (target-event? "release")
+      (let [event-data (-> (c.lease/format-lease lease)
+                           (assoc :event "release"))]
+        (m/assert p.webhook/lease-event-schema event-data)
+        (send-webhook client uri "release" (j/write-value-as-string event-data))))))

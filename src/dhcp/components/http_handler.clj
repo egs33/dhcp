@@ -115,7 +115,11 @@
                                  :summary "get server version"
                                  :responses {200 {:body [:map
                                                          [:version string?]]}}
-                                 :handler handler}}]]]]
+                                 :handler handler}}]
+       ["/webhook-event-schema" {:get {:name :get-webhook-event-schema
+                                       :summary "get webhook event json schema"
+                                       :responses {200 {:body [:map {:closed false}]}}
+                                       :handler handler}}]]]]
 
     {:validate spec/validate ; enable spec validation for route data
      :exception pretty/exception

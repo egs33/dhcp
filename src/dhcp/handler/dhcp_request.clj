@@ -171,11 +171,13 @@
                   _ (log/debug "DHCPREQUEST received, but lease record mismatch")]
               (create-dhcp-nak message l-addr))))))))
 
-(defn- request-in-renewing
+(defn- request-in-renewing-or-rebinding
   [^IDatabase db
    ^IWebhook webhook
    subnet
-   ^DhcpPacket packet]
+   ^DhcpPacket packet
+   event ; "renew" or "rebind"
+   ]
   (let [{:keys [:ciaddr :chaddr] :as message} (:message packet)
         lease-time-opt (some-> (r.dhcp-message/get-option message 51)
                                byte-array
@@ -196,10 +198,10 @@
                            (.until (now) ChronoUnit/SECONDS)
                            (+ lease-time))
             lease-time (max lease-time 600)
-            _ (p.db/update-lease db
-                                 (byte-array chaddr)
-                                 (r.ip-address/->byte-array ciaddr)
-                                 {:expired-at (.plusSeconds (now) lease-time)})
+            updated (p.db/update-lease db
+                                       (byte-array chaddr)
+                                       (r.ip-address/->byte-array ciaddr)
+                                       {:expired-at (.plusSeconds (now) lease-time)})
             _ (log/debugf "DHCPREQUEST lease updated %s" (str chaddr))
             options-by-code (reduce #(assoc %1 (:code %2) %2) {} (:options pool))
             requested-params (->> (r.dhcp-message/get-option message 55)
@@ -214,7 +216,9 @@
                                                      (map #(Byte/toUnsignedInt %)))}]
                             requested-params
                             [{:code 255, :type :end, :length 0, :value []}])]
-        (p.webhook/send-lease webhook (first leases))
+        (if (= event "renew")
+          (p.webhook/send-renew webhook updated)
+          (p.webhook/send-rebind webhook updated))
         (r.dhcp-message/map->DhcpMessage
          {:op :BOOTREPLY
           :htype (:htype message)
@@ -231,13 +235,6 @@
           :sname ""
           :file ""
           :options options})))))
-
-(defn- request-in-rebinding
-  [^IDatabase db
-   ^IWebhook webhook
-   subnet
-   ^DhcpPacket packet]
-  (request-in-renewing db webhook subnet packet))
 
 (defmethod h/handler DHCPREQUEST
   [{:keys [:db :config :webhook]}
@@ -263,8 +260,8 @@
 
       (:is-broadcast packet)
       (do (log/debug "DHCPREQUEST (rebinding)")
-          (request-in-rebinding db webhook subnet packet))
+          (request-in-renewing-or-rebinding db webhook subnet packet "rebind"))
 
       :else
       (do (log/debug "DHCPREQUEST (renewing)")
-          (request-in-renewing db webhook subnet packet)))))
+          (request-in-renewing-or-rebinding db webhook subnet packet "renew")))))

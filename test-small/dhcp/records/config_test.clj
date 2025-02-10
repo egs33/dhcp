@@ -65,7 +65,7 @@
                   (reset! ret (r.config/load-config path1)))]
         (is (nil? @ret)
             "return nil")
-        (is (= "webhook.events[0]:should be \"lease\"\nwebhook.foo: disallowed key\n"
+        (is (= "webhook.events[0]:should be either \"all\", \"offer\", \"lease\", \"renew\", \"rebind\" or \"release\"\nwebhook.foo: disallowed key\n"
                msg)
             "error message"))))
   (testing "load success"
