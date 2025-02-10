@@ -25,9 +25,17 @@
   (send-rebind [_ _])
   (send-release [_ _]))
 
+(def offer-event-schema
+  [:map {:closed true}
+   [:event [:enum "offer"]]
+   [:client-id [:maybe string?]]
+   [:hw-address string?]
+   [:ip-address string?]
+   [:lease-time pos-int?]])
+
 (def lease-event-schema
   [:map {:closed true}
-   [:event [:enum "offer" "lease" "renew" "rebind" "release"]]
+   [:event [:enum "lease" "renew" "rebind" "release"]]
    [:id pos-int?]
    [:client-id string?]
    [:hw-address string?]
@@ -38,3 +46,6 @@
    [:offered-at us/instant-json-schema :time/instant]
    [:leased-at {:json-schema/oneOf [{:type "string"} {:type "null"}]} [:maybe :time/instant]]
    [:expired-at us/instant-json-schema :time/instant]])
+
+(def webhook-event-schema
+  [:or offer-event-schema lease-event-schema])
