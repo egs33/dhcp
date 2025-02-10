@@ -6,6 +6,7 @@
    [dhcp.core.lease :as core.lease]
    [dhcp.handler :as h]
    [dhcp.protocol.database :as p.db]
+   [dhcp.protocol.webhook :as p.webhook]
    [dhcp.records.config :as r.config]
    [dhcp.records.dhcp-message :as r.dhcp-message]
    [dhcp.records.ip-address :as r.ip-address]
@@ -28,7 +29,7 @@
            US-ASCII))
 
 (defmethod h/handler DHCPDISCOVER
-  [{:keys [:db :config]}
+  [{:keys [:db :config :webhook]}
    ^DhcpPacket packet]
   (log/debugf "DHCPDISCOVER %s" (:message packet))
   (if-let [subnet (r.config/select-subnet config (:local-ip-address packet))]
@@ -77,6 +78,11 @@
                                                        (map #(Byte/toUnsignedInt %)))}]
                               requested-params
                               [{:code 255, :type :end, :length 0, :value []}])]
+          (p.webhook/send-offer webhook {:client-id (when client-id
+                                                      (byte-array client-id))
+                                         :hw-address (byte-array (:chaddr message))
+                                         :ip-address ip-address
+                                         :lease-time lease-time})
           (r.dhcp-message/map->DhcpMessage
            {:op :BOOTREPLY
             :htype (:htype message)
