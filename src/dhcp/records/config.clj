@@ -205,8 +205,8 @@
      [:port pos-int?]]]
    [:webhook {:optional true}
     [:map {:closed true}
-     [:events {:optional true}
-      [:sequential [:enum "lease"]]]
+     [:events
+      [:sequential [:enum "all" "offer" "lease" "renew" "rebind" "release"]]]
      [:url string?]]]])
 
 (defn- flat-error
