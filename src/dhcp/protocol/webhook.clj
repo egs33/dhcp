@@ -3,19 +3,31 @@
    [dhcp.util.schema :as us]))
 
 (defprotocol IWebhook
-  (send-lease [this lease]))
+  (send-offer [this lease])
+  (send-lease [this lease])
+  (send-renew [this lease])
+  (send-rebind [this lease])
+  (send-release [this lease]))
 
 (extend-protocol IWebhook
   nil
-  (send-lease [_ _]))
+  (send-offer [_ _])
+  (send-lease [_ _])
+  (send-renew [_ _])
+  (send-rebind [_ _])
+  (send-release [_ _]))
 
 (defrecord NopWebhook []
   IWebhook
-  (send-lease [_ _]))
+  (send-offer [_ _])
+  (send-lease [_ _])
+  (send-renew [_ _])
+  (send-rebind [_ _])
+  (send-release [_ _]))
 
 (def lease-event-schema
   [:map {:closed true}
-   [:event [:enum "lease"]]
+   [:event [:enum "offer" "lease" "renew" "rebind" "release"]]
    [:id pos-int?]
    [:client-id string?]
    [:hw-address string?]
