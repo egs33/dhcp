@@ -13,4 +13,4 @@
 (defmethod h/handler :get-webhook-event-schema
   [_]
   {:status 200
-   :body (malli.json-schema/transform p.webhook/webhook-event-schema)})
+   :body (json-schema/transform p.webhook/webhook-event-schema)})
