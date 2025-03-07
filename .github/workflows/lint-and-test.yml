@@ -13,7 +13,7 @@ jobs:
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
-      - uses: DeLaGuardo/setup-clojure@13.0
+      - uses: DeLaGuardo/setup-clojure@13.2
         with:
           cljstyle: latest
           clj-kondo: latest
@@ -47,7 +47,7 @@ jobs:
           key: rocksaw-src-1.1.0
       - name: build rocksaw
         run : ./build-rocksaw.sh
-      - uses: DeLaGuardo/setup-clojure@13.0
+      - uses: DeLaGuardo/setup-clojure@13.2
         with:
           cli: latest
       - uses: actions/cache@v4
@@ -96,7 +96,7 @@ jobs:
           tags: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
           labels: ${{ steps.meta.outputs.labels }}
       - name: Generate artifact attestation
-        uses: actions/attest-build-provenance@v1
+        uses: actions/attest-build-provenance@v2
         with:
           subject-name: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME}}
           subject-digest: ${{ steps.push.outputs.digest }}
