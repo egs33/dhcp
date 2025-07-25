@@ -101,6 +101,32 @@
                                                                  db
                                                                  (byte-array [0 1 2 3 4 5])
                                                                  nil)))))))
+  (testing "reservation changed to different MAC address with expired lease"
+    (let [db (db.mem/new-memory-database)
+          _ (p.db/add-reservations db [{:hw-address (byte-array [0 1 2 3 4 5])
+                                        :ip-address (byte-array [192 168 0 50])
+                                        :source "config"}])
+          _ (p.db/add-lease db {:client-id (byte-array [0 1  2 3 4 5])
+                                :hw-address (byte-array [0 1 2 3 4 5])
+                                :ip-address (byte-array [192 168 0 50])
+                                :hostname "host-a"
+                                :lease-time 86400
+                                :status "lease"
+                                :offered-at (Instant/now)
+                                :leased-at (Instant/now)
+                                :expired-at (.minusSeconds (Instant/now) 10)})
+          _ (p.db/delete-reservations-by-source db "config")
+          _ (p.db/add-reservations db [{:hw-address (byte-array [0 11 22 33 44 55])
+                                        :ip-address (byte-array [192 168 0 50])
+                                        :source "config"}])]
+      (is (= {:pool (th/array->vec-recursively (first (:pools sample-subnet)))
+              :ip-address (th/byte-vec [192 168 0 50])
+              :status :new
+              :lease-time 86400}
+             (th/array->vec-recursively (sut/choose-ip-address sample-subnet
+                                                               db
+                                                               (byte-array [0 11 22 33 44 55])
+                                                               (byte-array [0 0 0 0])))))))
   (testing "not reserved, already leased and active"
     (let [db (db.mem/new-memory-database)
           _ (p.db/add-lease db {:client-id (byte-array [0 1 2 3 4 5])

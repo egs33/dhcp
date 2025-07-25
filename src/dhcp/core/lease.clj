@@ -32,8 +32,11 @@
             current-lease (first (p.db/find-leases-by-ip-address db reservation-addr))]
         (if (or (nil? current-lease)
                 ;; TODO: consider client-identifier
-                (u.bytes/equal? (:hw-address current-lease) hw-address))
-          (let [lifetime (when current-lease
+                (u.bytes/equal? (:hw-address current-lease) hw-address)
+                ;; Allow new reservation to take over if existing lease is expired
+                (.isBefore (:expired-at current-lease) (Instant/now)))
+          (let [lifetime (when (and current-lease
+                                    (u.bytes/equal? (:hw-address current-lease) hw-address))
                            (.between ChronoUnit/SECONDS (Instant/now) (:expired-at current-lease)))]
             (if (and lifetime (pos? lifetime))
               {:pool pool
