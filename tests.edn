@@ -1,11 +1,11 @@
 #kaocha/v1
 {:tests [{:id :small
           :source-paths ["src"]
-          :test-paths ["test-small"]
+          :test-paths ["test/small"]
           :ns-patterns ["-test$"]}
          {:id :medium
           :source-paths ["src"]
-          :test-paths ["test-medium"]
+          :test-paths ["test/medium"]
           :ns-patterns ["-test$"]}]
  :plugins [:kaocha.plugin/print-invocations
            :kaocha.plugin/profiling
