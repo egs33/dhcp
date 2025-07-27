@@ -489,14 +489,14 @@
         now (instant)]
     (testing "update existing lease"
       (let [_lease (p.db/add-lease db {:client-id (byte-array [1 2 3 4 5 6])
-                                      :hw-address (byte-array [1 2 3 4 5 6])
-                                      :ip-address (byte-array [192 168 0 1])
-                                      :hostname "host1"
-                                      :lease-time 86400
-                                      :status "offer"
-                                      :offered-at now
-                                      :leased-at nil
-                                      :expired-at now})
+                                       :hw-address (byte-array [1 2 3 4 5 6])
+                                       :ip-address (byte-array [192 168 0 1])
+                                       :hostname "host1"
+                                       :lease-time 86400
+                                       :status "offer"
+                                       :offered-at now
+                                       :leased-at nil
+                                       :expired-at now})
             new-expired-at (.plusSeconds now 3600)]
         (p.db/update-lease db (byte-array [1 2 3 4 5 6]) (byte-array [192 168 0 1])
                            {:status "lease"

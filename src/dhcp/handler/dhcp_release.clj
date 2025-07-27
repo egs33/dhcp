@@ -4,9 +4,9 @@
    [dhcp.components.socket]
    [dhcp.const.dhcp-type :refer [DHCPRELEASE]]
    [dhcp.handler :as h]
-   [dhcp.util.bytes :as u.bytes]
    [dhcp.protocol.database :as p.db]
-   [dhcp.protocol.webhook :as p.webhook])
+   [dhcp.protocol.webhook :as p.webhook]
+   [dhcp.util.bytes :as u.bytes])
   (:import
    (dhcp.records.dhcp_packet
     DhcpPacket)
