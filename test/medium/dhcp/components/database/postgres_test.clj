@@ -484,8 +484,71 @@
                     (map #(dissoc % :id))
                     (th/array->vec-recursively))))))))
 
-;; TODO
-#_(deftest update-lease-test)
+(deftest update-lease-test
+  (let [db @db-atom
+        now (instant)]
+    (testing "update existing lease"
+      (let [_lease (p.db/add-lease db {:client-id (byte-array [1 2 3 4 5 6])
+                                      :hw-address (byte-array [1 2 3 4 5 6])
+                                      :ip-address (byte-array [192 168 0 1])
+                                      :hostname "host1"
+                                      :lease-time 86400
+                                      :status "offer"
+                                      :offered-at now
+                                      :leased-at nil
+                                      :expired-at now})
+            new-expired-at (.plusSeconds now 3600)]
+        (p.db/update-lease db (byte-array [1 2 3 4 5 6]) (byte-array [192 168 0 1])
+                           {:status "lease"
+                            :leased-at now
+                            :expired-at new-expired-at})
+        (is (= [{:client-id (th/byte-vec [1 2 3 4 5 6])
+                 :hw-address (th/byte-vec [1 2 3 4 5 6])
+                 :ip-address (th/byte-vec [192 168 0 1])
+                 :hostname "host1"
+                 :lease-time 86400
+                 :status "lease"
+                 :offered-at now
+                 :leased-at now
+                 :expired-at new-expired-at}]
+               (->> (p.db/get-all-leases db)
+                    (map #(dissoc % :id))
+                    (th/array->vec-recursively))))))
+    (testing "update non-existing lease"
+      (p.db/update-lease db (byte-array [10 20 30]) (byte-array [172 16 0 20])
+                         {:hostname "updated-host"})
+      (is (= 1
+             (count (p.db/get-all-leases db)))))
+    (testing "update multiple fields"
+      (p.db/add-lease db {:client-id (byte-array [10 20 30])
+                          :hw-address (byte-array [10 20 30])
+                          :ip-address (byte-array [172 16 0 19])
+                          :hostname "host2"
+                          :lease-time 3600
+                          :status "offer"
+                          :offered-at now
+                          :leased-at nil
+                          :expired-at now})
+      (let [new-leased-at (.plusSeconds now 60)
+            new-expired-at (.plusSeconds now 7200)]
+        (p.db/update-lease db (byte-array [10 20 30]) (byte-array [172 16 0 19])
+                           {:hostname "host2-updated"
+                            :status "lease"
+                            :lease-time 7200
+                            :leased-at new-leased-at
+                            :expired-at new-expired-at})
+        (is (= [{:client-id (th/byte-vec [10 20 30])
+                 :hw-address (th/byte-vec [10 20 30])
+                 :ip-address (th/byte-vec [172 16 0 19])
+                 :hostname "host2-updated"
+                 :lease-time 7200
+                 :status "lease"
+                 :offered-at now
+                 :leased-at new-leased-at
+                 :expired-at new-expired-at}]
+               (->> (p.db/find-leases-by-hw-address db (byte-array [10 20 30]))
+                    (map #(dissoc % :id))
+                    (th/array->vec-recursively))))))))
 
 (deftest delete-lease-test
   (let [db @db-atom
