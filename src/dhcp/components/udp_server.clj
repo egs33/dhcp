@@ -124,10 +124,8 @@
                           (when-let [reply (handler dhcp-packet)]
                             (core.packet/send-packet @socket-atom dhcp-packet reply))
                           (catch ExceptionInfo e
-                            (log/errorf "handler (type: %s) exception-info %s %s"
-                                        (r.dhcp-message/get-type message)
-                                        (ex-message e) (ex-data e))
-                            (trace/print-stack-trace e))
+                            (log/errorf "handler (type: %s) exception-info %s"
+                                        (r.dhcp-message/get-type message) e))
                           (catch Exception e
                             (log/errorf "handler exception (type: %s) %s"
                                         (r.dhcp-message/get-type message)
